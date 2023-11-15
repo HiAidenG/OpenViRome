@@ -25,6 +25,19 @@ devtools::install_github("HiAidenG/OpenViRome", build_vignettes = TRUE)
 require("OpenViRome")
 ```
 
+Note: palmid is currently not available from CRAN and must be installed through GitHub:
+```r
+install.packages("devtools")
+devtools::install_github("ababaian/palmid")
+```
+and ComplexHeatmap is only available from BioConductor:
+```r
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("ComplexHeatmap")
+```
+
 ### Overview
 
 ```r
