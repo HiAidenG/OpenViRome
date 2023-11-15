@@ -1,0 +1,144 @@
+## Basic Overview
+
+OpenViRome is an R package designed to generate 'virome reports' of Serratus
+data given a taxonomic group of interest. Its primary focus is on generating
+meaningful and interpretable plots of viral diversity for streamlined analysis,
+not the generation of new data. It is meant to be used in tandem with palmid,
+which provides a contrasting 'virus-first' approach. 
+
+The ultimate goal of the two packages is to create a framework for prioritizing
+novel viruses relevant to human health and agriculture. 
+
+## Step 1:
+OpenViRome analysis begins by choosing a taxonomic group of interest.
+Alternatively, one can also query a specific SRA run or set of runs (provided
+the data is available on Serratus). For this walkthrough, we will use nematode
+superfamily Tylenchoidea, whose members include plant parastic nematodes that
+are responsible for destructive crop loss. 
+
+```{r}
+library(OpenViRome)
+```
+
+```{r}
+# Query the Serratus SQL for Tylenchoidea
+con <- palmid::SerratusConnect() # establish a connection to the SQL server
+TylenchoideaVirome <- getVirome(tax = "Tylenchoidea", con = con)
+
+# Alternatively, you can query with a set of runs
+virome <- getVirome(sra = c("SRR17756040", "SRR5942326"), con = con)
+```
+
+Note that querying Serratus can take a while, and is dependent on the size of 
+the specified taxon. 
+For this tutorial, we can also load the included Tylenchoidea virome object
+
+```{r}
+data("TylenchoideaVirome")
+head(TylenchoideaVirome)
+```
+
+## Step 2: 
+Now that we have the data, we'd like to start exploring it. At a very high
+level, we can get a sense for what families of virus are present by plotting
+a pie chart.
+
+```{r}
+p <- plotVirome(TylenchoideaVirome)
+p
+```
+
+The largest slice is 'null' meaning we were unable to identify a virus family
+for that sOTU. This means either 1) the virus is so highly diverged we were
+unable to find any significant alignments in GenBank, or 2) the virus we
+aligned to is not annotated as belonging to a family. 
+
+In this case, this plot raises more questions than it answers. For instance:
+- What are the viruses in the 'null' category?
+- Why are there so many viral families for a relatively small host range? How
+  many of these viruses could be 'true' infections vs. contamination?
+- What is the distribution of viruses across the different host species?
+
+To make sense of this, we'll have to dig a little deeper.
+
+## Step 3:
+Plot distribution of virus families.
+As a sanity check, we can make sure none of our potential hosts have some sort
+of omnipresent contaminant.
+```{r}
+# This requires connecting to Serratus again to query a separate SQL table,
+# it could take some time.
+incidencePlot(TylenchoideaVirome, con)
+```
+Now we can look at the distribution of viruses across the different source 
+species.
+```{r}
+perSpeciesHeatmap(TylenchoideaVirome)
+```
+This plot is purely looking at the quantity of vOTUs (palmids) that aligned
+to a given family for each source species. It does not take into account
+any kind of viral expression, nor should the palmids be interpreted as unique
+viral species. We can still see a large density of an uncharacterized virus
+(or viruses) in genus Globodera, Heterodera, and Meloidogyne (top row). Is this
+a single viral species that infects all three genera? But while we're here,
+we can also compute a number of alpha-diversity metrics for each source species:
+
+```{r}
+# Compute Shannon diversity for whole virome
+print(paste0("Shannon diversity: ", getShannonDiversity(TylenchoideaVirome)))
+
+# Or for an individual source species
+print(paste0("Globodera rostochiensis Shannon diversity: ", 
+             getShannonDiversity(TylenchoideaVirome,
+                                 sourceSpecies = "Globodera rostochiensis")))
+
+# And some other alpha diversity metrics
+print(paste0("Simpson diversity: ", getSimpsonDiversity(TylenchoideaVirome)))
+print(paste0("Heterodera glycines richness: ", 
+             getSpeciesRichness(TylenchoideaVirome, 
+                                sourceSpecies = "Heterodera glycines")))
+```
+
+## Step 4: Incorporate Coverage
+Coverage is the number of reads aligning to that sOTU for a given sequencing
+library. It is a proxy for viral abundance, which itself can be used to inform
+whether a particular virus might be a true infection or a contaminant. However,
+caution should be noted as to not over-interpret coverage. It is merely a metric
+for prioritizing novel viruses of potential interest. 
+
+OpenViRome provides two plots for visualizing coverage, and they provide
+slightly different information. The first is a simple heatmap, which plots
+the coverage of each sOTU across all source species. 
+
+```{r}
+viroMap(TylenchoideaVirome, minCov = 30)
+#minCov can be adjusted to filter based on sOTU coverage.
+```
+The second plot is a scatterplot, that also incorporates the number of 
+BioProjects (essentially, independent studies) and the number of runs that the
+sOTU was found in. Generally, a virus that appears in multiple BioProjects
+is less likely to be a contaminant. 
+
+```{r}
+palmPrevalence(TylenchoideaVirome)
+```
+Bubbles are sized by coverage, and colored by GenBank identity. We can see there
+is a high density of viruses appearing in few runs and few BioProjects, although
+some of them have high coverage. Investigating these further would require
+palmid analyses. In the meanwhile, we can see u507489 immediately stands out as
+a high coverage virus that appears in many runs and BioProjects, with a low
+genbank identity. Let's pull that virus:
+
+```{r}
+TylenchoideaVirome[TylenchoideaVirome$sotu == "u507489",]
+```
+
+A quick GenBank search reveals the closest known relative to this virus is in the
+family Orthomyxoviridae (same family as influenza), and originated from a bumble 
+bee. At this percent identity, though, it's hard to say what the true host for 
+this virus might be. Although, given that it independently appears in multiple 
+BioProjects labelled with several different Globodera species, it's possible this 
+could be a worm flu! 
+
+
+
