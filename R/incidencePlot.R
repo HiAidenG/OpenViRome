@@ -5,7 +5,8 @@
 #' @param virome A virome object
 #' @param con A database connection
 #' @return A plotly bar chart
-#' @importFrom dplyr group_by %>% summarise collect left_join pivot_longer
+#' @importFrom dplyr group_by %>% summarise collect left_join
+#' @importFrom tidyr pivot_longer
 #' @importFrom plotly plot_ly layout
 #' @importFrom RColorBrewer brewer.pal
 #' @export

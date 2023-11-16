@@ -7,8 +7,6 @@
 #' @importFrom dplyr select group_by summarise n_distinct
 #' @importFrom plotly plot_ly layout add_trace
 #' @importFrom RColorBrewer brewer.pal
-#' @importFrom scales log
-#' @importFrom stats cut
 #' @export
 palmPrevalence <- function(virome) {
 

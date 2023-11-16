@@ -6,6 +6,12 @@
 \usage{
 perSpeciesHeatmap(virome)
 }
+\arguments{
+\item{virome}{A virome object}
+}
+\value{
+A plotly heatmap
+}
 \description{
 creates a heatmap of the number of palmids aligned to a given
 family for each species in the genus-level virome.

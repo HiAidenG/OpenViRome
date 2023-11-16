@@ -18,11 +18,12 @@ are responsible for destructive crop loss.
 
 ```{r}
 library(OpenViRome)
+
+con <- palmid::SerratusConnect() # establish a connection to the SQL server
 ```
 
 ```{r}
 # Query the Serratus SQL for Tylenchoidea
-con <- palmid::SerratusConnect() # establish a connection to the SQL server
 TylenchoideaVirome <- getVirome(tax = "Tylenchoidea", con = con)
 
 # Alternatively, you can query with a set of runs
