@@ -56,19 +56,20 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
          'evenness'")
   }
 
-  if ("shannon" %in% mode | "simpson" %in% mode) {
-    stop("Error: cannot calculate both Shannon and Simpson diversity")
-  }
+  # connect to Serratus
+  con <- palmid::SerratusConnect()
 
   returnTable <- tibble(bio_sample = unique(virome$bio_sample))
   for (i in 1:length(mode)) {
     if (mode[i] == "shannon") {
       returnTable <- returnTable %>%
-        full_join(getDiversity(virome, mode="shannon"), by = "bio_sample")
+        full_join(getDiversity(virome, mode="shannon", con=con),
+                  by = "bio_sample")
     }
     else if (mode[i] == "simpson") {
       returnTable <- returnTable %>%
-        full_join(getDiversity(virome, mode="simpson"), by = "bio_sample")
+        full_join(getDiversity(virome, mode="simpson", con=con),
+                  by = "bio_sample")
     }
     else if (mode[i] == "richness") {
       returnTable <- returnTable %>%
@@ -76,7 +77,7 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
     }
     else if (mode[i] == "evenness") {
       returnTable <- returnTable %>%
-        full_join(getEvenness(virome), by = "bio_sample")
+        full_join(getEvenness(virome), by = "bio_sample", con=con)
     }
   }
 
@@ -129,8 +130,24 @@ getDiversity <- function(virome, mode = "shannon", con) {
     group_by(bio_sample) %>%
     mutate(total_coverage = sum(node_coverage_sum)) %>%
     mutate(prop = node_coverage_sum / total_coverage) %>%
-    mutate()
     select(bio_sample, sotu, prop)
+
+  # Get the library size for normalization
+  bioSamples <- unique(virome$bio_sample)
+  librarySize <- tbl(con, "srarun") %>%
+    filter(bio_sample %in% bioSamples) %>%
+    group_by(bio_sample) %>%
+    summarise(library_size = sum(spots), .groups = 'drop') %>%
+    select(bio_sample, library_size) %>%
+    collect()
+
+  # Make the numbers a bit nicer, scaling by 1e8
+  librarySize$library_size <- librarySize$library_size / 1e8
+
+  # Scale proportion by library size
+  virome <- virome %>%
+    left_join(librarySize, by = "bio_sample") %>%
+    mutate(prop = prop / library_size)
 
   if (mode == "shannon") {
     diversity <- virome %>%
@@ -160,10 +177,10 @@ getDiversity <- function(virome, mode = "shannon", con) {
 #' column for evenness.
 #' @importFrom dplyr filter group_by %>% summarise mutate
 #' NOT EXPORTED
-getEvenness <- function(virome) {
+getEvenness <- function(virome, con) {
 
   # Calculate Shannon diversity
-  shannon <- getDiversity(virome, mode = "shannon")
+  shannon <- getDiversity(virome, mode = "shannon", con=con)
 
   # Calculate richness
   richness <- getRichness(virome)
