@@ -18,24 +18,23 @@ novel viruses relevant to human health and agriculture.
 
 ### Installation
 
+You will first need to install palmid and ComplexHeatmap, as neither are 
+available from CRAN.
 ```r
 install.packages("devtools")
 library("devtools")
-devtools::install_github("HiAidenG/OpenViRome", build_vignettes = TRUE)
-require("OpenViRome")
-```
-
-Note: palmid is currently not available from CRAN and must be installed through GitHub:
-```r
-install.packages("devtools")
 devtools::install_github("ababaian/palmid")
-```
-and ComplexHeatmap is only available from BioConductor:
-```r
+
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
 BiocManager::install("ComplexHeatmap")
+```
+
+Now install OpenViRome:
+```r
+devtools::install_github("HiAidenG/OpenViRome", build_vignettes = TRUE)
+require("OpenViRome")
 ```
 
 ### Overview
