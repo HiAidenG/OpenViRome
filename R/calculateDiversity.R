@@ -56,19 +56,17 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
          'evenness'")
   }
 
-  # connect to Serratus
-  con <- palmid::SerratusConnect()
 
   returnTable <- tibble(bio_sample = unique(virome$bio_sample))
   for (i in 1:length(mode)) {
     if (mode[i] == "shannon") {
       returnTable <- returnTable %>%
-        full_join(getDiversity(virome, mode="shannon", con=con),
+        full_join(getDiversity(virome, mode="shannon"),
                   by = "bio_sample")
     }
     else if (mode[i] == "simpson") {
       returnTable <- returnTable %>%
-        full_join(getDiversity(virome, mode="simpson", con=con),
+        full_join(getDiversity(virome, mode="simpson"),
                   by = "bio_sample")
     }
     else if (mode[i] == "richness") {
@@ -77,7 +75,7 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
     }
     else if (mode[i] == "evenness") {
       returnTable <- returnTable %>%
-        full_join(getEvenness(virome), by = "bio_sample", con=con)
+        full_join(getEvenness(virome), by = "bio_sample")
     }
   }
 
@@ -119,35 +117,18 @@ getRichness <- function(virome) {
 #' are treated as the abundance of that species.
 #' @importFrom dplyr filter group_by %>% summarise mutate
 #' NOT EXPORTED
-getDiversity <- function(virome, mode = "shannon", con) {
-  # Calculate the sum of node_coverage for each sotu within each bio_sample
-  virome <- virome %>%
-    group_by(bio_sample, sotu) %>%
-    summarise(node_coverage_sum = sum(node_coverage), .groups = 'drop')
+getDiversity <- function(virome, mode = "shannon") {
 
-  # Calculate the total coverage and proportion for each sotu in each bio_sample
+  con <- palmid::SerratusConnect()
+
+  virome <- getSpeciesCounts(virome, con) # get normalized counts for each sotu
+
+  # Calculate proportion of coverage in each biosample
   virome <- virome %>%
     group_by(bio_sample) %>%
     mutate(total_coverage = sum(node_coverage_sum)) %>%
     mutate(prop = node_coverage_sum / total_coverage) %>%
     select(bio_sample, sotu, prop)
-
-  # Get the library size for normalization
-  bioSamples <- unique(virome$bio_sample)
-  librarySize <- tbl(con, "srarun") %>%
-    filter(bio_sample %in% bioSamples) %>%
-    group_by(bio_sample) %>%
-    summarise(library_size = sum(spots), .groups = 'drop') %>%
-    select(bio_sample, library_size) %>%
-    collect()
-
-  # Make the numbers a bit nicer, scaling by 1e8
-  librarySize$library_size <- librarySize$library_size / 1e8
-
-  # Scale proportion by library size
-  virome <- virome %>%
-    left_join(librarySize, by = "bio_sample") %>%
-    mutate(prop = prop / library_size)
 
   if (mode == "shannon") {
     diversity <- virome %>%
@@ -201,7 +182,120 @@ getEvenness <- function(virome, con) {
 
 }
 
-# TODO: Beta-diversity (Bray-curtis)
+#' @title getSpeciesCounts
+#' @description Calculate the number of reads mapping to each sotu in a virome
+#' object.
+#' @param virome A virome object
+#' @param con A database connection object (to Serratus SQL).
+#' @keywords internal
+#' @return A tibble with rows for each bioSample present in the virome and a
+#' column for each sotu, with the normalized number of reads mapping to that
+#' sotu.
+getSpeciesCounts <- function(virome = NULL, con = NULL) {
+
+  # Get the library size for normalization
+  bioSamples <- unique(virome$bio_sample)
+  librarySize <- tbl(con, "srarun") %>%
+    filter(bio_sample %in% bioSamples) %>%
+    group_by(bio_sample) %>%
+    summarise(library_size = sum(spots), .groups = 'drop') %>%
+    select(bio_sample, library_size) %>%
+    collect()
+
+  # Make the numbers a bit nicer, scaling by 1e8
+  librarySize$library_size <- librarySize$library_size / 1e8
+
+  # Calculate the sum of node_coverage for each sotu within each bio_sample
+  virome <- virome %>%
+    group_by(bio_sample, sotu) %>%
+    summarise(node_coverage_sum = sum(node_coverage), .groups = 'drop')
+
+  # Scale node_coverage_sum by library size
+  virome <- virome %>%
+    left_join(librarySize, by = "bio_sample") %>%
+    mutate(node_coverage_sum = node_coverage_sum / library_size) %>%
+    select(bio_sample, sotu, node_coverage_sum)
+
+  return(virome)
+
+}
+
+#' @title getBetaDiversity
+#' @description Calculate pairwise Bray-curtis dissimilarity of a virome object
+#' for all bioSamples present in the virome. Bray-curtis dissimilarity is
+#' defined as sum(|x_ij - x_ik|) / sum(x_ij + x_ik), where where x_ij and
+#' x_ik are the number of reads mapping to sotu i and bioSample j and k,
+#' respectively.
+#' @param virome A virome object
+#' @return A tibble with rows for each bioSample present in the virome and a
+#' column for each bioSample, with the Bray-curtis dissimilarity between the
+#' two bioSamples.
+getBetaDiversity <- function(virome) {
+
+  con <- palmid::SerratusConnect()
+
+  virome <- getSpeciesCounts(virome, con)
+
+  # Calculate the pairwise Bray-curtis dissimilarity
+  betaDiversity <- virome %>%
+    pivot_wider(names_from = sotu, values_from = prop,
+                values_fill = 0) %>%
+    column_to_rownames("bio_sample") %>%
+    as.matrix() %>%
+    vegdist(method = "bray", na.rm=TRUE)
+
+  # Convert to a tibble
+  betaDiversity <- as_tibble(as.matrix(betaDiversity))
+  rownames(betaDiversity) <- colnames(betaDiversity)
+  return(betaDiversity)
+}
+
+#' @title getAmpvisData
+#' @description Return an OTU-table and metadata table in ampvis format
+#' (OTUs as rows, samples as columns), values are the normalized number of
+#' reads mapping to each OTU in each sample. Metadata table is a subset of the
+#' palm_virome table. Columns are:
+#' - bioSample: BioSample accession
+#' - bioProject: BioProject accession
+#' - source: Metadata annotation of the BioSample source species
+#' @param virome A virome object
+#' @param con A database connection object (to Serratus SQL).
+#' @keywords internal
+#' @return A data.frame with OTUs as rows and samples as columns, with values
+#' being the normalized number of reads mapping to each OTU in each sample.
+#' NOT EXPORTED
+getAmpvisCounts <- function(virome, con) {
+
+  counts <- getSpeciesCounts(virome, con)
+  families <- virome %>%
+    select(sotu, tax_family) %>%
+    distinct()
+  counts <- counts %>%
+    left_join(families, by = c("sotu" = "sotu"))
+
+  counts <- counts %>%
+    pivot_wider(names_from = bio_sample, values_from = prop,
+                values_fill = 0)
+
+  # rename columns so ampvis recognizes them
+  colnames(counts)[1] <- "otu"
+  colnames(counts)[2] <- "family"
+
+  # Make all other columns numeric
+  counts[,3:ncol(counts)] <- apply(counts[,3:ncol(counts)], 2, as.numeric)
+
+  counts$family[is.na(counts$family)] <- "null"
+  # make missing numeric values 0 (some runs have 0 spots?)
+  counts[is.na(counts)] <- 0
+
+  # get metadata table
+  metadata <- virome %>%
+    select(bio_sample, bio_project, scientific_name) %>%
+    distinct()
+
+  return(list(counts, metadata))
+}
+
 
 # [END]
 
