@@ -10,7 +10,7 @@
 #' @param mode A character vector of diversity metrics to calculate. Options:
 #' "shannon", "simpson", "richness", "evenness". Default is "shannon".
 #' @return A tibble with columns for each diversity metric calculated.
-#' @importfrom dplyr filter group_by %>% summarise mutate
+#' @import dplyr
 #' @export
 #' @examples
 #' # Calculate Shannon diversity for all virome data
@@ -86,12 +86,12 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
 #' @title getRichness
 #' @description Calculate species richness (i.e. number of unique viral
 #' families) of a virome object.
+#' NOT EXPORTED
 #' @param virome A virome object
 #' @keywords internal
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for richness.
-#' @importFrom dplyr filter group_by %>% summarise mutate
-#' NOT EXPORTED
+#' @import dplyr
 getRichness <- function(virome) {
 
   richness <- virome %>%
@@ -107,6 +107,7 @@ getRichness <- function(virome) {
 #' Note: There are multiple metrics referred to in the literature as "Simpson
 #' diveristy". This function calculates the D_0, which is the probability that
 #' two randomly selected reads will be of the same sotu.
+#' NOT EXPORTED
 #' @param virome A virome object
 #' @param mode Either "shannon" or "simpson"
 #' @param con A database connection object (to Serratus SQL).
@@ -116,7 +117,6 @@ getRichness <- function(virome) {
 #' sample, and each sotu is treated as a species. Reads mapping to each sotu
 #' are treated as the abundance of that species.
 #' @importFrom dplyr filter group_by %>% summarise mutate
-#' NOT EXPORTED
 getDiversity <- function(virome, mode = "shannon") {
 
   con <- palmid::SerratusConnect()
@@ -152,12 +152,12 @@ getDiversity <- function(virome, mode = "shannon") {
 #' are largely dependent on species (in this case reads) abundance, which
 #' can be variable between samples (due to sequencing depth). Some values
 #' may be NaN if the richness is 1.
+#' NOT EXPORTED
 #' @param virome A virome object
 #' @keywords internal
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for evenness.
 #' @importFrom dplyr filter group_by %>% summarise mutate
-#' NOT EXPORTED
 getEvenness <- function(virome, con) {
 
   # Calculate Shannon diversity
@@ -185,6 +185,7 @@ getEvenness <- function(virome, con) {
 #' @title getSpeciesCounts
 #' @description Calculate the number of reads mapping to each sotu in a virome
 #' object.
+#' NOT EXPORTED
 #' @param virome A virome object
 #' @param con A database connection object (to Serratus SQL).
 #' @keywords internal
@@ -230,6 +231,7 @@ getSpeciesCounts <- function(virome = NULL, con = NULL) {
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for each bioSample, with the Bray-curtis dissimilarity between the
 #' two bioSamples.
+#' @export
 getBetaDiversity <- function(virome) {
 
   con <- palmid::SerratusConnect()
@@ -258,12 +260,12 @@ getBetaDiversity <- function(virome) {
 #' - bioSample: BioSample accession
 #' - bioProject: BioProject accession
 #' - source: Metadata annotation of the BioSample source species
+#' NOT EXPORTED
 #' @param virome A virome object
 #' @param con A database connection object (to Serratus SQL).
 #' @keywords internal
 #' @return A data.frame with OTUs as rows and samples as columns, with values
 #' being the normalized number of reads mapping to each OTU in each sample.
-#' NOT EXPORTED
 getAmpvisCounts <- function(virome, con) {
 
   counts <- getSpeciesCounts(virome, con)
