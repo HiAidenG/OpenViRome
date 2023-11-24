@@ -126,8 +126,8 @@ getDiversity <- function(virome, mode = "shannon") {
   # Calculate proportion of coverage in each biosample
   virome <- virome %>%
     group_by(bio_sample) %>%
-    mutate(total_coverage = sum(node_coverage_sum)) %>%
-    mutate(prop = node_coverage_sum / total_coverage) %>%
+    mutate(total_coverage = sum(node_coverage_norm)) %>%
+    mutate(prop = node_coverage_norm / total_coverage) %>%
     select(bio_sample, sotu, prop)
 
   if (mode == "shannon") {
@@ -195,29 +195,22 @@ getEvenness <- function(virome, con) {
 getSpeciesCounts <- function(virome = NULL, con = NULL) {
 
   # Get the library size for normalization
-  # TODO: this isn't right. Normalization should be done for runs that are
-  # virus positive only. This is a temporary fix.
-  bioSamples <- unique(virome$bio_sample)
+  runs <- distinct(virome, run) %>% pull(run)
+
+  # Get the library size for each run
   librarySize <- tbl(con, "srarun") %>%
-    filter(bio_sample %in% bioSamples) %>%
-    group_by(bio_sample) %>%
-    summarise(library_size = sum(spots), .groups = 'drop') %>%
-    select(bio_sample, library_size) %>%
+    filter(run %in% runs) %>%
+    select(run, spots) %>%
     collect()
 
-  # Make the numbers a bit nicer, scaling by 1e8
-  librarySize$library_size <- librarySize$library_size / 1e8
-
-  # Calculate the sum of node_coverage for each sotu within each bio_sample
+  # Scale the counts in virome by the library size
   virome <- virome %>%
-    group_by(bio_sample, sotu) %>%
-    summarise(node_coverage_sum = sum(node_coverage), .groups = 'drop')
+    left_join(librarySize, by = 'run') %>%
+    mutate(node_coverage_norm = (node_coverage / spots) * 1e6) #scale by 1e6
 
-  # Scale node_coverage_sum by library size
+  # return(virome)
   virome <- virome %>%
-    left_join(librarySize, by = "bio_sample") %>%
-    mutate(node_coverage_sum = node_coverage_sum / library_size) %>%
-    select(bio_sample, sotu, node_coverage_sum)
+    select(bio_sample, sotu, node_coverage_norm)
 
   return(virome)
 
@@ -277,27 +270,28 @@ getAmpvisCounts <- function(virome, con) {
   counts <- counts %>%
     left_join(families, by = c("sotu" = "sotu"))
 
+
   counts <- counts %>%
-    pivot_wider(names_from = bio_sample, values_from = prop,
-                values_fill = 0)
+    pivot_wider(names_from = bio_sample, values_from = node_coverage_norm)
 
-  # rename columns so ampvis recognizes them
-  colnames(counts)[1] <- "otu"
-  colnames(counts)[2] <- "family"
-
-  # Make all other columns numeric
-  counts[,3:ncol(counts)] <- apply(counts[,3:ncol(counts)], 2, as.numeric)
-
-  counts$family[is.na(counts$family)] <- "null"
-  # make missing numeric values 0 (some runs have 0 spots?)
-  counts[is.na(counts)] <- 0
-
-  # get metadata table
-  metadata <- virome %>%
-    select(bio_sample, bio_project, scientific_name) %>%
-    distinct()
-
-  return(list(counts, metadata))
+  #
+  # # rename columns so ampvis recognizes them
+  # colnames(counts)[1] <- "otu"
+  # colnames(counts)[2] <- "family"
+  #
+  # # Make all other columns numeric
+  # counts[,3:ncol(counts)] <- apply(counts[,3:ncol(counts)], 2, as.numeric)
+  #
+  # counts$family[is.na(counts$family)] <- "null"
+  # # make missing numeric values 0 (some runs have 0 spots?)
+  # counts[is.na(counts)] <- 0
+  #
+  # # get metadata table
+  # metadata <- virome %>%
+  #   select(bio_sample, bio_project, scientific_name) %>%
+  #   distinct()
+  #
+  # return(list(counts, metadata))
 }
 
 
