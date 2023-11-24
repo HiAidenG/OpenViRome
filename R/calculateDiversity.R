@@ -195,6 +195,8 @@ getEvenness <- function(virome, con) {
 getSpeciesCounts <- function(virome = NULL, con = NULL) {
 
   # Get the library size for normalization
+  # TODO: this isn't right. Normalization should be done for runs that are
+  # virus positive only. This is a temporary fix.
   bioSamples <- unique(virome$bio_sample)
   librarySize <- tbl(con, "srarun") %>%
     filter(bio_sample %in% bioSamples) %>%
