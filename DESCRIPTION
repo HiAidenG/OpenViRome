@@ -2,9 +2,17 @@ Package: OpenViRome
 Title: Viromics Analysis of Serratus Data
 Version: 0.0.1.0000
 Authors@R: 
-    person("Aiden", "Hiller", , "aiden.hiller@mail.utoronto.ca", role = c("aut", "cre"),
-           comment = c(ORCID = "0009-0007-0441-9748"))
-Description: What the package does (one paragraph).
+    person("Aiden", "Hiller", , "aiden.hiller@mail.utoronto.ca", 
+    role = c("aut", "cre"),
+    comment = c(ORCID = "0009-0007-0441-9748"))
+Description: OpenViRome is an R package designed to generate 'virome reports' of
+             Serratus data given a taxonomic group of interest. Its primary focus 
+             is on generating meaningful and interpretable plots of viral 
+             diversity for streamlined analysis, not the generation of new data.
+             It is meant to be used in tandem with palmid, which provides a 
+             contrasting 'virus-first' approach. OpenViRome can take as input a 
+             taxonomic group of interest, or a vector of SRA run ids that have 
+             been queried by Serratus.
 License: use_mit_license()
 Encoding: UTF-8
 Imports: 
@@ -14,7 +22,8 @@ Imports:
     palmid,
     taxize,
     dbplyr,
-    plotly
+    plotly,
+    ggplot2
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Suggests: 

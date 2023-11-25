@@ -6,6 +6,9 @@
 #' take.
 #' @param tax A taxonomic term
 #' @param sra A character vector of SRA accessions
+#' @param con A connection to the Serratus database
+#' @param abundance A boolean indicating whether to calculate the proportion
+#' of virus-positive runs for each taxon. Default is FALSE.
 #' @return A virome object
 #' @export
 #' @examples
@@ -25,8 +28,7 @@
 #' R. C. Edgar et al. (2021),
 #' Petabase-scale sequence alignment catalyses viral discovery. Nature.
 #' @export
-getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
-
+getVirome <- function(tax = NULL, sra = NULL, con = NULL, abundance = FALSE) {
   if (is.null(con)) {
     stop("Please provide a connection to the Serratus database
          (see palmid::SerratusConnect)")
@@ -40,42 +42,91 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
          SRA accessions")
   }
   if (!is.null(tax) & is.null(sra)) {
-
-    # Figure out taxonomic level
-    tax <- stringr::str_to_title(tax)
-
-    # Check if a genus was provided
-    rank <- taxize::classification(tax, db = 'ncbi')[[1]]
-    rank <- rank[rank$name == tax, 'rank']
-    if (is.null(rank)) {
-      stop("Error: could not find taxonomic term in NCBI taxonomy database")
-    }
-    else if (rank == 'genus') {
-      searchTerms <- tax
-    }
-    else {
-      # Have to go down to genus level
-      searchTerms <- taxize::downstream(tax, db ='ncbi', downto = 'genus')
-      searchTerms <- searchTerms[[1]]['childtaxa_name'][[1]]
-    }
-
-    # Get the virome object
-    regexPattern <- paste(searchTerms, collapse = "|")
+    runDF <- taxLookup(tax, con)
+    runs <- runDF %>% dplyr::pull(run)
     virome <- tbl(con, "palm_virome") %>%
-      dplyr::filter(grepl(pattern = regexPattern, x = scientific_name,
-                          ignore.case = TRUE)) %>%
+      dplyr::filter(run %in% runs) %>%
       dplyr::collect()
-
-    return(virome)
   }
 
-  else if (is.null(tax) & !is.null(sra)) {
-    # Get the virome object
-    virome <- tbl(con, "palm_virome") %>%
-      dplyr::filter(run %in% sra) %>%
+  # else if (is.null(tax) & !is.null(sra)) {
+  #   # Get the virome object
+  #   virome <- tbl(con, "palm_virome") %>%
+  #     dplyr::filter(run %in% sra) %>%
+  #     dplyr::collect()
+  # }
+
+if (abundance) {
+    # Get distinct runs with their corresponding 
+    # scientific names from virome
+    distinctRuns <- virome %>%
+      dplyr::select(run, scientific_name) %>%
+      dplyr::distinct() 
+
+    # Count virus positive runs for each taxon
+    virusPositive <- distinctRuns %>%
+      dplyr::group_by(scientific_name) %>%
+      dplyr::summarise(virus_positive=n()) %>%
       dplyr::collect()
 
-    return(virome)
+    # Count total runs for each taxon in runDF
+    total <- runDF %>%
+      dplyr::group_by(scientific_name) %>%
+      dplyr::summarise(total=n()) %>%
+      dplyr::collect()
 
+    # Join the virusPositive and total tables
+    join <- dplyr::left_join(total, virusPositive, by='scientific_name')
+
+    # Replace NA values with 0
+    join[is.na(join)] <- 0
+
+    return(list(virome, join))              
+}
+
+  return(virome)
+}
+#' @title taxLookup
+#' @description Return a list of all runs processed by Serratus that match
+#' tax. Used internally by getVirome.
+#  NOT EXPORTED
+#' @param tax A taxon defined in NCBI taxonomy. Must be type char.
+#' @param con A connection to the Serratus database
+#' @return A character vector of SRA accessions.
+#' @import dplyr
+taxLookup <- function(tax, con) {
+  # Get ranking of taxonomic term
+  class <- taxize::classification(tax, db = 'ncbi')[[1]]
+  # Check if a species was provided
+  rank <- class[class$name == tax, 'rank']
+  if (is.null(rank)) {
+    stop("Error: could not find taxonomic term in NCBI taxonomy database")
   }
+  else if (rank == 'species') {
+    searchTerms <- class[class$name == tax, 'id']
+  }
+  else {
+    # Collect all child taxa
+    taxid <- as.character(class[class$name == tax, 'id'])
+    searchTerms <- taxize::downstream(taxid, db ='ncbi', downto = 'species')
+    searchTerms <- searchTerms[[1]][,'childtaxa_id']
+  }
+  # Get all SRA accessions
+  query <- tbl(con, "srarun") %>%
+    dplyr::filter(tax_id %in% searchTerms) %>%
+    dplyr::select(scientific_name, run) %>%
+    dplyr::collect()
+  return(query)
+}
+
+#' @title scientificNametoTaxID
+#' @description Convert a scientific name to a taxonomic ID
+#' @param name A character vector of scientific names
+#' @return A character vector of taxonomic IDs
+#' @import taxize
+#' NOT EXPORTED. Used internally as a helper.
+scientificNametoTaxID <- function(name) {
+  class <- taxize::classification(name, db = 'ncbi')[[1]]
+  taxid <- class[class$name == name, 'id']
+  return(taxid)
 }

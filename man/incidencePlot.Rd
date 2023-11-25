@@ -6,6 +6,14 @@
 \usage{
 incidencePlot(virome, con)
 }
+\arguments{
+\item{virome}{A virome object}
+
+\item{con}{A database connection}
+}
+\value{
+A plotly bar chart
+}
 \description{
 Plot the incidence of virus positive sra runs against all
 runs analyzed

@@ -6,6 +6,12 @@
 \usage{
 palmPrevalence(virome)
 }
+\arguments{
+\item{virome}{A virome object}
+}
+\value{
+A plotly scatterplot
+}
 \description{
 For every sotu in a virome, plot the number of runs in which
 it was found against the number of bioprojects

@@ -18,11 +18,12 @@ are responsible for destructive crop loss.
 
 ```{r}
 library(OpenViRome)
+
+con <- palmid::SerratusConnect() # establish a connection to the SQL server
 ```
 
 ```{r}
 # Query the Serratus SQL for Tylenchoidea
-con <- palmid::SerratusConnect() # establish a connection to the SQL server
 TylenchoideaVirome <- getVirome(tax = "Tylenchoidea", con = con)
 
 # Alternatively, you can query with a set of runs
@@ -139,6 +140,5 @@ bee. At this percent identity, though, it's hard to say what the true host for
 this virus might be. Although, given that it independently appears in multiple 
 BioProjects labelled with several different Globodera species, it's possible this 
 could be a worm flu! 
-
 
 

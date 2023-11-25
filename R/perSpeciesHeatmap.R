@@ -3,9 +3,10 @@
 #' family for each species in the genus-level virome.
 #' @param virome A virome object
 #' @return A plotly heatmap
-#' @importFrom dplyr group_by %>% summarise spread
+#' @importFrom dplyr group_by %>% summarise
+#' @importFrom tidyr spread
 #' @importFrom plotly plot_ly layout colorbar
-#' @importFrom RColorBrewer brewer.pal colorRampPalette
+#' @importFrom RColorBrewer brewer.pal
 #' @export
 perSpeciesHeatmap <- function(virome) {
   countsDF <- virome %>%
