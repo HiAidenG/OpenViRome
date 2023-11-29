@@ -146,7 +146,8 @@ nameVecToRank <- function(names = NULL, taxRank = NULL) {
       }, error = function(e) NULL)
 
       # Check if class is a dataframe or list and contains the rank column
-      if (!is.null(class) && "data.frame" %in% class(class) && "rank" %in% names(class)) {
+      if (!is.null(class) && "data.frame" %in% class(class) && "rank" %in%
+          names(class)) {
         # Filter the classification for the desired rank
         rankRow <- class[class$rank == taxRank[i], 'name', drop = FALSE]
         if (nrow(rankRow) > 0) {
