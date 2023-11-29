@@ -1,3 +1,7 @@
+# viromeQueries.R
+# This file contains functionality relating to querying the Serratus SQL and
+# NCBI taxonomy for assembling a virome object.
+
 #' @title getVirome
 #' @description Returns a virome object given either:
 #' 1) a taxonomic term and (optional) taxonomic level
@@ -7,8 +11,6 @@
 #' @param tax A taxonomic term
 #' @param sra A character vector of SRA accessions
 #' @param con A connection to the Serratus database
-#' @param abundance A boolean indicating whether to calculate the proportion
-#' of virus-positive runs for each taxon. Default is FALSE.
 #' @return A virome object
 #' @export
 #' @examples
@@ -28,7 +30,7 @@
 #' R. C. Edgar et al. (2021),
 #' Petabase-scale sequence alignment catalyses viral discovery. Nature.
 #' @export
-getVirome <- function(tax = NULL, sra = NULL, con = NULL, abundance = FALSE) {
+getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
   if (is.null(con)) {
     stop("Please provide a connection to the Serratus database
          (see palmid::SerratusConnect)")
@@ -43,49 +45,38 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL, abundance = FALSE) {
   }
   if (!is.null(tax) & is.null(sra)) {
     runDF <- taxLookup(tax, con)
+    runDF <- data.frame(runDF)
     runs <- runDF %>% dplyr::pull(run)
     virome <- tbl(con, "palm_virome") %>%
       dplyr::filter(run %in% runs) %>%
       dplyr::collect()
+
+    # Mutate runDF to include a column for whether that run was virus positive
+    runDF <- runDF %>%
+      dplyr::mutate(virus_positive = ifelse(run %in% virome$run, TRUE, FALSE))
+
+    # Add normalized coverage
+    virome <- virome %>%
+      dplyr::left_join(runDF %>% dplyr::select(run, spots), by = 'run') %>%
+      dplyr::mutate(node_coverage_norm = (node_coverage / spots) * 1e6) %>%
+      dplyr::select(-spots)
+
+    # Add taxonomic information
+    virusSpecies <- virome %>% dplyr::pull(tax_species) %>% unique()
+    ranks <- rep('phylum', length(virusSpecies))
+    virusPhyla <- nameVecToRank(names=virusSpecies, taxRank=ranks)
+    taxInfo <- tibble::tibble(tax_species = virusSpecies,
+                              tax_phylum = virusPhyla)
+    virome <- virome %>% dplyr::left_join(taxInfo, by = 'tax_species')
   }
 
-  # else if (is.null(tax) & !is.null(sra)) {
-  #   # Get the virome object
-  #   virome <- tbl(con, "palm_virome") %>%
-  #     dplyr::filter(run %in% sra) %>%
-  #     dplyr::collect()
-  # }
 
-if (abundance) {
-    # Get distinct runs with their corresponding 
-    # scientific names from virome
-    distinctRuns <- virome %>%
-      dplyr::select(run, scientific_name) %>%
-      dplyr::distinct() 
+  return(list(virome, runDF))
+  # TODO: add support for sra accession input
 
-    # Count virus positive runs for each taxon
-    virusPositive <- distinctRuns %>%
-      dplyr::group_by(scientific_name) %>%
-      dplyr::summarise(virus_positive=n()) %>%
-      dplyr::collect()
-
-    # Count total runs for each taxon in runDF
-    total <- runDF %>%
-      dplyr::group_by(scientific_name) %>%
-      dplyr::summarise(total=n()) %>%
-      dplyr::collect()
-
-    # Join the virusPositive and total tables
-    join <- dplyr::left_join(total, virusPositive, by='scientific_name')
-
-    # Replace NA values with 0
-    join[is.na(join)] <- 0
-
-    return(list(virome, join))              
 }
 
-  return(virome)
-}
+
 #' @title taxLookup
 #' @description Return a list of all runs processed by Serratus that match
 #' tax. Used internally by getVirome.
@@ -114,7 +105,7 @@ taxLookup <- function(tax, con) {
   # Get all SRA accessions
   query <- tbl(con, "srarun") %>%
     dplyr::filter(tax_id %in% searchTerms) %>%
-    dplyr::select(scientific_name, run) %>%
+    dplyr::select(tax_id, scientific_name, run, spots) %>%
     dplyr::collect()
   return(query)
 }
@@ -130,3 +121,44 @@ scientificNametoTaxID <- function(name) {
   taxid <- class[class$name == name, 'id']
   return(taxid)
 }
+
+#' @title nameVecToRank
+#' @description Convert a vector of scientific names to the specified taxonomic
+#' ranks for those names.
+#' @param names A character vector of scientific names
+#' @param taxRank A character vector of taxonomic ranks
+#' @return A character vector of taxons
+#' @import taxize
+nameVecToRank <- function(names = NULL, taxRank = NULL) {
+  if (is.null(names) | is.null(taxRank)) {
+    stop("Must provide both a vector of names and a vector of taxonomic ranks")
+  }
+  if (length(names) != length(taxRank)) {
+    stop("Length of names and taxRank must be equal")
+  }
+
+  taxons <- rep(NA, length(names))
+
+  for (i in 1:length(names)) {
+    if (!is.null(names[i])) {
+      class <- tryCatch({
+        taxize::classification(names[i], db = 'ncbi')[[1]]
+      }, error = function(e) NULL)
+
+      # Check if class is a dataframe or list and contains the rank column
+      if (!is.null(class) && "data.frame" %in% class(class) && "rank" %in% names(class)) {
+        # Filter the classification for the desired rank
+        rankRow <- class[class$rank == taxRank[i], 'name', drop = FALSE]
+        if (nrow(rankRow) > 0) {
+          taxons[i] <- rankRow$name
+        }
+      }
+    }
+  }
+
+  return(taxons)
+}
+
+
+
+# [END]

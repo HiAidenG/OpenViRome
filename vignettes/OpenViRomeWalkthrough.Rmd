@@ -1,13 +1,82 @@
 ## Basic Overview
 
-OpenViRome is an R package designed to generate 'virome reports' of Serratus
-data given a taxonomic group of interest. Its primary focus is on generating
+OpenViRome is an R package designed to generate 'virome' style reports of Serratus
+data given a taxonomic group of interest. The package's primary goal is to
+provide exploratory data visualizations of viral diversity for the purpose of
+identifying novel viruses of high priority. Visulizations within the package
+can broadly be grouped into two categories: 
+1. Objective Plots. Such plots are not likely to be easily interpretable as 
+metagenomic data is innately noisy, but rather they plainly lay out the data 
+without bias. These plots are meant to answer:
+ - What viruses are present in this taxon across the SRA?
+ - How are the viruses distributed across species within the taxon?
+ - How is viral diversity different between samples?
+ 
+2. Opinionated Plots. These plots are meant to elucidate more of a story of
+which viruses are high priority for characterization, based on features I have
+deemed to be important. 
+
+
+
+
+Its primary focus is on generating
 meaningful and interpretable plots of viral diversity for streamlined analysis,
 not the generation of new data. It is meant to be used in tandem with palmid,
 which provides a contrasting 'virus-first' approach. 
 
+For this walkthrough, we will be focusing on characterizing the parasitic
+nematode superfamily Tylenchoidea virome.  
+
 The ultimate goal of the two packages is to create a framework for prioritizing
 novel viruses relevant to human health and agriculture. 
+
+================================================================================
+## Step 1: Setup
+
+```{r}
+library(OpenViRome)
+
+con <- palmid::SerratusConnect() # establish a connection to the Serratus SQL
+test <- getVirome(tax="Musa", con=con, abundance=TRUE)
+
+```
+
+
+================================================================================
+## Objective Plots
+
+### Plot 1: Viral Diversity (family abundance)
+```{r}
+p <- plotVirome(test)
+p
+
+```
+
+### Plot 2: Host-Viral Burden (Incidence of vRNA+ samples)
+```{r}
+
+p <- incidencePlot(test, con=con)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Step 1:
 OpenViRome analysis begins by choosing a taxonomic group of interest.
@@ -140,5 +209,23 @@ bee. At this percent identity, though, it's hard to say what the true host for
 this virus might be. Although, given that it independently appears in multiple 
 BioProjects labelled with several different Globodera species, it's possible this 
 could be a worm flu! 
+
+```{r}
+# Plot Beta-diversity with PCA using ampvis2 package
+con <- palmid::SerratusConnect()
+counts <- getAmpvisCounts(TylenchoideaVirome, con)
+
+
+data <- ampvis2::amp_load(otutable = counts[[1]], 
+                          metadata = counts[[2]])
+
+p <- ampvis2::amp_ordinate(data, filter_species=0.0, type="pca",
+                           distmeasure="bray", 
+                           transform = "none",
+                           sample_color_by="scientific_name")
+p
+
+
+```
 
 

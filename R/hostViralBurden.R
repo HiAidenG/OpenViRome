@@ -1,6 +1,31 @@
-# hostViralBurden.R
+#' @title getHostViralBurden
+#' @description Takes a virome object as input and re-queries Serratus to get
+#' the incidence of viral RNA positive SRA runs out of the total number queried
+#' for each source species.
+#' @param virome A virome object
+#' @return A data frame with the total number of runs queried and the number
+#' of runs that were virus positive for each source species.
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax = "Meloidogyne", con = con)
+#' getHostViralBurden(virome = virome, con = con)
+#' @import dplyr
+#' @import
+getHostViralBurden <- function(virome = NULL) {
 
+  if (is.null(virome)) {
+    stop("Please provide a virome object (see OpenViRome::getVirome)")
+  }
 
+  runDF <- virome[[2]]
+  runDF <- runDF %>%
+    dplyr::group_by(scientific_name) %>%
+    dplyr::summarise(total = n(),
+                     virus_positive = sum(virus_positive)) %>%
+    dplyr::mutate(percent_virus_positive = virus_positive / total)
+
+  return(runDF)
+}
 
 #' @title plotVirusPositive
 #' @description Plots the proportion of virus positive runs for each taxon
@@ -41,8 +66,6 @@ plotVirusPositive <- function(abundanceDF) {
 
   return(p)
 }
-
-# [END]
 
 
 
