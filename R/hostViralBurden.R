@@ -65,25 +65,60 @@ plotVirusPositive <- function(vbDF = NULL) {
 }
 
 
-createSankeyDiagram <- function(virome) {
-  # Create connections between the nodes
+#' @title drawVirusSankey
+#' @description Draws a Sankey diagram of the virome object. NOTE: for
+#' large viromes (i.e. >200 rows) this will take a long time to render and be
+#' completely uninterpretable. It is recommended that you filter by a specific
+#' viral phylum.
+#' @param virome A virome object
+#' @param phylumFilter A character vector of viral phyla to filter by. Default
+#' is NULL and will not filter the data.
+#' @return A plotly Sankey diagram
+#' @import dplyr
+#' @import plotly
+#' @import tidyr
+#' @import RColorBrewer
+drawVirusSankey <- function(virome, phylumFilter = NULL) {
+  # Extract the data from the virome list
   data <- virome[[1]]
-  # Create connections between the nodes
+
+  # Assign 'unknown' to missing tax_phylum
+  data$tax_phylum[is.na(data$tax_phylum)] <- "Unknown"
+
+  # Filter the data based on the provided tax_phylum, if specified
+  if (!is.null(phylumFilter)) {
+    data <- data[data$tax_phylum %in% phylumFilter, ]
+  }
+
+  # Create the color mapping for each tax_phylum
+  unique_phylum <- unique(data$tax_phylum)
+  colors <- grDevices::palette.colors(n = length(unique_phylum), alpha = 0.7)
+  color_mapping <- setNames(colors, unique_phylum)
+
+  # Apply color mapping to each tax_phylum in the data
+  data$color <- color_mapping[data$tax_phylum]
+
+  # Create links for the Sankey diagram
   links <- data %>%
-    count(tax_phylum, tax_species) %>%
-    rename(source = tax_phylum, target = tax_species, value = n) %>%
+    group_by(tax_phylum, tax_species) %>%
+    summarise(value = n(), color = first(color)) %>%
+    rename(source = tax_phylum, target = tax_species) %>%
     bind_rows(data %>%
-                count(tax_species, sotu) %>%
-                rename(source = tax_species, target = sotu, value = n)) %>%
+                group_by(tax_species, sotu) %>%
+                summarise(value = n(), color = first(color)) %>%
+                rename(source = tax_species, target = sotu)) %>%
     bind_rows(data %>%
-                count(sotu, bio_project) %>%
-                rename(source = sotu, target = bio_project, value = n)) %>%
+                group_by(sotu, bio_project) %>%
+                summarise(value = n(), color = first(color)) %>%
+                rename(source = sotu, target = bio_project)) %>%
     bind_rows(data %>%
-                count(bio_project, scientific_name) %>%
-                rename(source = bio_project, target = scientific_name, value = n))
+                group_by(bio_project, scientific_name) %>%
+                summarise(value = n(), color = "#ebeced") %>%
+                rename(source = bio_project, target = scientific_name))
 
   # Create a list of unique nodes
   nodes <- data.frame(name = unique(c(links$source, links$target)))
+
 
   # Convert node names to indices
   links$source <- match(links$source, nodes$name) - 1
@@ -104,17 +139,27 @@ createSankeyDiagram <- function(virome) {
         color = "black",
         width = 0.5
       ),
-      label = nodes$name
+      label = nodes$name,
+      color = rep("grey", length(nodes$name))  # All nodes are grey
     ),
     link = list(
       source = links$source,
       target = links$target,
-      value = links$value
+      value = links$value,
+      color = links$color  # Link colors based on originating tax_phylum
     )
   )
 
   return(p)
 }
+
+
+
+
+
+
+
+
 
 
 
