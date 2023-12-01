@@ -12,7 +12,6 @@
 #' @param sra A character vector of SRA accessions
 #' @param con A connection to the Serratus database
 #' @return A virome object
-#' @export
 #' @examples
 #' con <- palmid::SerratusConnect()
 #' getVirome(tax = "Meloidogyne", con = con)

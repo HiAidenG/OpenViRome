@@ -10,7 +10,6 @@
 #' virome <- getVirome(tax = "Meloidogyne", con = con)
 #' getHostViralBurden(virome = virome, con = con)
 #' @import dplyr
-#' @import
 getHostViralBurden <- function(virome = NULL) {
 
   if (is.null(virome)) {
@@ -73,12 +72,18 @@ plotVirusPositive <- function(vbDF = NULL) {
 #' @param virome A virome object
 #' @param phylumFilter A character vector of viral phyla to filter by. Default
 #' is NULL and will not filter the data.
+#' @param abundanceFilter Filter sOTUs with abundance across all BioSamples
+#' less than this value. Default is 0.
 #' @return A plotly Sankey diagram
+#' @examples
+#' virome <- getVirome(tax = "Meloidogyne", con = con)
+#' drawVirusSankey(virome = virome)
 #' @import dplyr
 #' @import plotly
 #' @import tidyr
 #' @import RColorBrewer
-drawVirusSankey <- function(virome, phylumFilter = NULL) {
+#' @export
+drawVirusSankey <- function(virome, phylumFilter = NULL, abundanceFilter = 0) {
   # Extract the data from the virome list
   data <- virome[[1]]
 
@@ -89,6 +94,15 @@ drawVirusSankey <- function(virome, phylumFilter = NULL) {
   if (!is.null(phylumFilter)) {
     data <- data[data$tax_phylum %in% phylumFilter, ]
   }
+
+  # Filter the data based on the provided abundanceFilter, if specified
+  sotuCounts <- data %>%
+    group_by(sotu) %>%
+    summarise(abundance = n()) %>%
+    filter(abundance >= abundanceFilter) %>%
+    select(sotu)
+
+  data <- data[data$sotu %in% sotuCounts$sotu, ]
 
   # Create the color mapping for each tax_phylum
   unique_phylum <- unique(data$tax_phylum)
