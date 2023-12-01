@@ -28,7 +28,7 @@ getHostViralBurden <- function(virome = NULL) {
 
 #' @title plotVirusPositive
 #' @description Plots the proportion of virus positive runs for each taxon
-#' @param vbDF
+#' @param vbDF viral burden dataframe. See getHostViralBurden()
 #' @return A plotly bar chart
 #' @importFrom dplyr group_by %>% summarise collect left_join
 #' @importFrom tidyr pivot_longer
@@ -56,7 +56,7 @@ plotVirusPositive <- function(vbDF = NULL) {
                orientation = 'h') %>%
     add_trace(x = ~virus_negative, name = 'Virus Negative',
               marker = list(color = 'grey'), orientation = 'h') %>%
-    layout(barmode = 'stack', yaxis = list(title = 'Run Source Species'),
+    layout(barmode = 'stack', yaxis = list(title = 'Source Species'),
            xaxis = list(title = 'Runs'), showlegend = TRUE) %>%
     plotly::config(displayModeBar = FALSE)
 

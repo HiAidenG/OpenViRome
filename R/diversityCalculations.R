@@ -274,37 +274,34 @@ plotAlphaDiversity <- function(virome, mode = "shannon") {
     left_join(genera, by = "genus") %>%
     mutate(color = colors)
 
+  alphaDiversity$hover_info <- paste("Biosample: ", alphaDiversity$bio_sample)
 
   # Plot
-  if (mode == "shannon") {
-    p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y=~shannon,
-                  color = ~color, type = "box",
-                  boxpoints = "all", jitter = 0.3, pointpos = 0.0,
-                  line = list(width = 0),
-                  fillcolor = "rgba(0,0,0,0)",
-                  name = mode) %>%
-      layout(yaxis = list(title = "Shannon Diversity"),
-             xaxis = list(title = "Source Species"))
+    if (mode == "shannon") {
+        p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~shannon,
+                      color = ~color, type = "box",
+                      boxpoints = "all", jitter = 0.3, pointpos = 0.0,
+                      line = list(width = 0),
+                      fillcolor = "rgba(0,0,0,0)",
+                      name = mode,
+                      text = ~hover_info,  # Add hover text
+                      hoverinfo = "text+y") %>%
+            layout(yaxis = list(title = "Shannon Diversity"),
+                   xaxis = list(title = "Source Species"))
+    } else if (mode == "simpson") {
+        p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~simpson,
+                      color = ~color, type = "box",
+                      boxpoints = "all", jitter = 0.3, pointpos = 0.0,
+                      line = list(width = 0),
+                      fillcolor = "rgba(0,0,0,0)",
+                      name = mode,
+                      text = ~hover_info,  # Add hover text
+                      hoverinfo = "text+y") %>%
+            layout(yaxis = list(title = "Simpson Diversity"),
+                   xaxis = list(title = "Source Species"))
+    }
 
-
-  } else if (mode == "simpson") {
-    p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y=~simpson,
-                  color = ~color, type = "box",
-                  boxpoints = "all", jitter = 0.3, pointpos = 0.0,
-                  line = list(width = 0),
-                  fillcolor = "rgba(0,0,0,0)",
-                  name = mode) %>%
-      layout(yaxis = list(title = "Simpson Diversity"),
-             xaxis = list(title = "Source Species"))
-
-  }
-
-  # TODO: not sure if evenness should be included. Seems kind of useless.
-
-
-
-  return(p1)
-
+    return(p1)
 }
 
 

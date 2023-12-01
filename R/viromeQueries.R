@@ -44,6 +44,13 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
   }
   if (!is.null(tax) & is.null(sra)) {
     runDF <- taxLookup(tax, con)
+
+    # Check there wasn't an error
+    if (is.null(runDF)) {
+      stop("Error: could not find taxonomic term in NCBI taxonomy database")
+    }
+
+    runDF <- taxLookup(tax = tax, con = con)
     runDF <- data.frame(runDF)
     runs <- runDF %>% dplyr::pull(run)
     virome <- tbl(con, "palm_virome") %>%
@@ -61,12 +68,12 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
       dplyr::select(-spots)
 
     # Add taxonomic information
-    virusSpecies <- virome %>% dplyr::pull(tax_species) %>% unique()
-    ranks <- rep('phylum', length(virusSpecies))
-    virusPhyla <- nameVecToRank(names=virusSpecies, taxRank=ranks)
-    taxInfo <- tibble::tibble(tax_species = virusSpecies,
-                              tax_phylum = virusPhyla)
-    virome <- virome %>% dplyr::left_join(taxInfo, by = 'tax_species')
+    virusSpecies <- virome %>% select(sotu) %>% unique() %>% pull(sotu)
+    phyla <- getVirusTaxonomy(otu = virusSpecies, con = con)
+
+    # Join the taxonomic information to the virome
+    virome <- virome %>% dplyr::left_join(phyla, by = 'sotu',
+                                          relationship = "many-to-many")
   }
 
 
@@ -86,10 +93,10 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
 #' @import dplyr
 taxLookup <- function(tax, con) {
   # Get ranking of taxonomic term
-  class <- taxize::classification(tax, db = 'ncbi')[[1]]
+  class <- taxizedb::classification(tax, db = 'ncbi')[[1]]
   # Check if a species was provided
   rank <- class[class$name == tax, 'rank']
-  if (is.null(rank)) {
+  if (is.null(rank) || length(rank) == 0) {
     stop("Error: could not find taxonomic term in NCBI taxonomy database")
   }
   else if (rank == 'species') {
@@ -98,8 +105,8 @@ taxLookup <- function(tax, con) {
   else {
     # Collect all child taxa
     taxid <- as.character(class[class$name == tax, 'id'])
-    searchTerms <- taxize::downstream(taxid, db ='ncbi', downto = 'species')
-    searchTerms <- searchTerms[[1]][,'childtaxa_id']
+    searchTerms <- taxizedb::downstream(taxid, db ='ncbi', downto = 'species')
+    searchTerms <- searchTerms[[taxid]][["childtaxa_id"]]
   }
   # Get all SRA accessions
   query <- tbl(con, "srarun") %>%
@@ -119,6 +126,36 @@ scientificNametoTaxID <- function(name) {
   class <- taxize::classification(name, db = 'ncbi')[[1]]
   taxid <- class[class$name == name, 'id']
   return(taxid)
+}
+
+#' @title getVirusTaxonomy
+#' @description Return the taxonomic information at a specified rank for
+#' a given virus.
+#' @param virus A character vector of virus names
+#' @param rank A character vector of taxonomic ranks
+#' @param con A connection to the Serratus database
+#' @return A character vector of taxons
+#' @import dplyr
+getVirusTaxonomy <- function(otu = NULL, con = NULL) {
+  if (is.null(otu)) {
+    stop("Must provide a character vector of virus names")
+  }
+  if (is.null(con)) {
+    stop("Please provide a connection to the Serratus database
+         (see palmid::SerratusConnect)")
+  }
+
+  virusClass <- tbl(con, "palm_tax") %>%
+    dplyr::filter(sotu %in% otu) %>%
+    dplyr::select(tax_phylum, sotu) %>%
+    distinct() %>%
+    dplyr::collect()
+
+
+  return(virusClass)
+
+
+
 }
 
 #' @title nameVecToRank
@@ -162,3 +199,4 @@ nameVecToRank <- function(names = NULL, taxRank = NULL) {
 
 
 # [END]
+

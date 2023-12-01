@@ -4,13 +4,16 @@
 \alias{drawVirusSankey}
 \title{drawVirusSankey}
 \usage{
-drawVirusSankey(virome, phylumFilter = NULL)
+drawVirusSankey(virome, phylumFilter = NULL, abundanceFilter = 0)
 }
 \arguments{
 \item{virome}{A virome object}
 
 \item{phylumFilter}{A character vector of viral phyla to filter by. Default
 is NULL and will not filter the data.}
+
+\item{abundanceFilter}{Filter sOTUs with abundance across all BioSamples
+less than this value. Default is 0.}
 }
 \value{
 A plotly Sankey diagram
@@ -20,4 +23,8 @@ Draws a Sankey diagram of the virome object. NOTE: for
 large viromes (i.e. >200 rows) this will take a long time to render and be
 completely uninterpretable. It is recommended that you filter by a specific
 viral phylum.
+}
+\examples{
+virome <- getVirome(tax = "Meloidogyne", con = con)
+drawVirusSankey(virome = virome)
 }
