@@ -25,6 +25,10 @@ ui <- fluidPage(
       tabsetPanel(
         # First Tab: All Objective Plots
         tabPanel("Objective Plots",
+
+        # Add some summary statistics at the top
+        verbatimTextOutput("stats"),
+
           fluidRow(
             column(6, plotlyOutput("PieChart")),
             column(6, plotlyOutput("VirusBarChart"))
@@ -34,7 +38,7 @@ ui <- fluidPage(
           ),
           fluidRow(
             column(6, plotlyOutput("AlphaDiversity"))
-            # column(6, plotlyOutput("BetaDiversityOrdination")) - commented out as per your original code
+            # column(6, plotlyOutput("BetaDiversityOrdination"))
           )
         ),
         # Second Tab: Blank for now
@@ -52,6 +56,7 @@ server <- function(input, output, session) {
 
   # Reactive value for virome data
   viromeData <- reactiveVal(NULL)
+  selectedPhylum <- reactiveVal(NULL)
   # ampvisData <- reactiveVal(NULL)
 
   # Observe the submit button
@@ -71,12 +76,53 @@ server <- function(input, output, session) {
     viromeData(virome)
     # ampvisData(ampvisObj)
 
-    # Render the plot
-    output$PieChart <- renderPlotly({
+    # Calculate summary statistics
+    output$stats <- renderPrint({
       req(viromeData()) # Ensure virome data is not NULL
 
-      # Generate and render the pie chart
-      plotVirome(virome = viromeData())
+      stats <- getViromeSummary(virome = viromeData())
+      numSOTUs <- stats['numSOTUs'][[1]]
+      medCoverage <- stats['medianNormCov'][[1]]
+      maxCoverage <- stats['maxNormCov'][[1]]
+
+      # Return the summary statistics
+      paste("Number of Unique sOTUs: ", numSOTUs, "\n",
+            "Median Normalized Coverage ", medCoverage, "\n",
+            "Max Normalized Coverage: ", maxCoverage, "\n",
+            sep = "")
+    })
+
+
+    output$PieChart <- renderPlotly({
+    req(viromeData()) # Ensure virome data is not NULL
+
+    pie_data <- viromeData() %>%
+                distinct(sotu) %>%
+                group_by(tax_phylum) %>%
+                summarise(Count = n()) %>%
+                arrange(desc(Count))
+
+    # Create the pie chart directly here
+    p <- plot_ly(pie_data, labels = ~tax_phylum, values = ~Count, type = 'pie', 
+                 key = ~Phylum, source = "PieChart") %>%
+         layout(title = 'Distribution by Phylum')
+
+    # Register the 'plotly_click' event
+    event_register(p, 'plotly_click')
+
+    p # Return the plot
+})
+
+observeEvent(event_data("plotly_click", source = "PieChart"), function(click_data) {
+    selectedPhylum(click_data$key)
+})
+
+
+    output$Sankey <- renderPlotly({
+        req(viromeData()) # Ensure virome data is not NULL
+        current_phylum <- selectedPhylum()
+
+        drawVirusSankey(virome = viromeData(), phylumFilter = current_phylum)
     })
 
     output$VirusBarChart <- renderPlotly({
@@ -86,12 +132,6 @@ server <- function(input, output, session) {
       plotVirusPositive(getHostViralBurden(virome = viromeData()))
     })
 
-    output$Sankey <- renderPlotly({
-      req(viromeData()) # Ensure virome data is not NULL
-
-      # Generate and render the sankey diagram
-      drawVirusSankey(virome = viromeData())
-    })
 
     output$AlphaDiversity <- renderPlotly({
       req(viromeData()) # Ensure virome data is not NULL

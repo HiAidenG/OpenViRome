@@ -64,7 +64,7 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
     # Add normalized coverage
     virome <- virome %>%
       dplyr::left_join(runDF %>% dplyr::select(run, spots), by = 'run') %>%
-      dplyr::mutate(node_coverage_norm = (node_coverage / spots) * 1e6) %>%
+      dplyr::mutate(node_coverage_norm = (node_coverage / spots) * 1e8) %>%
       dplyr::select(-spots)
 
     # Add taxonomic information
@@ -194,6 +194,32 @@ nameVecToRank <- function(names = NULL, taxRank = NULL) {
   }
 
   return(taxons)
+}
+
+#' @title getViromeSummary
+#' @description Return a number of summary statistics for a given virome
+#' @param virome A virome object
+#' @return A list of summary statistics
+#' @import dplyr
+getViromeSummary <- function(virome = NULL) {
+  # Get sOTU count
+  virome <- virome[[1]]
+  sotuCount <- virome %>% dplyr::select(sotu) %>% unique() %>% nrow()
+
+  # Get median normalized coverage
+  medianNormCov <- virome %>% dplyr::select(node_coverage_norm) %>%
+    dplyr::summarise(median = median(node_coverage_norm)) %>%
+    dplyr::pull(median)
+
+  # Get max normalized coverage
+  maxNormCov <- virome %>% dplyr::select(node_coverage_norm) %>%
+    dplyr::summarise(max = max(node_coverage_norm)) %>%
+    dplyr::pull(max)
+
+  returnVec <- c(sotuCount, medianNormCov, maxNormCov)
+  names(returnVec) <- c("numSOTUs", "medianNormCov", "maxNormCov")
+
+  return(returnVec)
 }
 
 
