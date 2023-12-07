@@ -94,3 +94,4 @@ viroMap <- function(virome = NULL, minCov = 0) {
   return(map)
 
 }
+

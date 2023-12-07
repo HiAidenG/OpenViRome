@@ -63,7 +63,7 @@ palmPrevalence <- function(virome) {
                           marker=list(sizemode = 'diameter',
                                       sizeref = 5,
                                       sizemin = 2)) %>%
-    plotly::layout(title='sOTU SRA Prevalence',
+    plotly::layout(title='sOTU Virome Prevalence',
                    xaxis = list(title = 'Runs',
                                 type = 'log',  # Set x-axis to logarithmic scale
                                 automargin = FALSE,

@@ -3,21 +3,26 @@
 # NCBI taxonomy for assembling a virome object.
 
 #' @title getVirome
+#'
 #' @description Returns a virome object given either:
 #' 1) a taxonomic term and (optional) taxonomic level
 #' 2) a character vector of SRA accessions
 #' Note: the broader the taxonomic search term, the longer the query will
 #' take.
+#'
 #' @param tax A taxonomic term
 #' @param sra A character vector of SRA accessions
 #' @param con A connection to the Serratus database
 #' @return A virome object
+#'
 #' @examples
 #' con <- palmid::SerratusConnect()
 #' getVirome(tax = "Meloidogyne", con = con)
 #' getVirome(sra = c("SRR17756040", "SRR5942326"), con = con)
-#' @importFrom dplyr tbl collect filter mutate group_by summarise n
-#' @importFrom taxize classification downstream
+#'
+#' @importFrom taxizedb classification downstream
+#' @importFrom dplyr filter select collect left_join pull
+#'
 #' @references
 #' Wickham H, François R, Henry L, Müller K, Vaughan D (2023).
 #' dplyr: A Grammar of Data Manipulation.
@@ -74,6 +79,11 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
     # Join the taxonomic information to the virome
     virome <- virome %>% dplyr::left_join(phyla, by = 'sotu',
                                           relationship = "many-to-many")
+
+    # Rename NA to "Unclassified"
+    virome <- virome %>% dplyr::mutate(tax_phylum = ifelse(is.na(tax_phylum),
+                                                       "Unclassified",
+                                                       tax_phylum))
   }
 
 
@@ -116,26 +126,20 @@ taxLookup <- function(tax, con) {
   return(query)
 }
 
-#' @title scientificNametoTaxID
-#' @description Convert a scientific name to a taxonomic ID
-#' @param name A character vector of scientific names
-#' @return A character vector of taxonomic IDs
-#' @import taxize
-#' NOT EXPORTED. Used internally as a helper.
-scientificNametoTaxID <- function(name) {
-  class <- taxize::classification(name, db = 'ncbi')[[1]]
-  taxid <- class[class$name == name, 'id']
-  return(taxid)
-}
-
 #' @title getVirusTaxonomy
+#'
 #' @description Return the taxonomic information at a specified rank for
 #' a given virus.
+#'
 #' @param virus A character vector of virus names
 #' @param rank A character vector of taxonomic ranks
 #' @param con A connection to the Serratus database
+#'
 #' @return A character vector of taxons
+#'
 #' @import dplyr
+#'
+#' @export
 getVirusTaxonomy <- function(otu = NULL, con = NULL) {
   if (is.null(otu)) {
     stop("Must provide a character vector of virus names")
@@ -153,9 +157,6 @@ getVirusTaxonomy <- function(otu = NULL, con = NULL) {
 
 
   return(virusClass)
-
-
-
 }
 
 #' @title nameVecToRank
@@ -197,13 +198,33 @@ nameVecToRank <- function(names = NULL, taxRank = NULL) {
 }
 
 #' @title getViromeSummary
-#' @description Return a number of summary statistics for a given virome
+#'
+#' @description Return a number of summary statistics for a given virome.
+#'
 #' @param virome A virome object
-#' @return A list of summary statistics
+#'
+#' @return A list of summary statistics (# of unique sOTUs, mean normalized
+#' coverage, median normalized coverage, max normalized coverage, virus
+#' positive runs, total runs processed).
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax="Canis", con=con)
+#' summary <- getViromeSummary(virome = virome)
+#'
 #' @import dplyr
+#'
+#' @export
 getViromeSummary <- function(virome = NULL) {
-  # Get sOTU count
+
+  if (is.null(virome)) {
+    stop("Please provide a virome object (see getVirome)")
+  }
+
+  runData <- virome[[2]]
   virome <- virome[[1]]
+
+  # Get unique sOTU count
   sotuCount <- virome %>% dplyr::select(sotu) %>% unique() %>% nrow()
 
   # Get median normalized coverage
@@ -211,15 +232,58 @@ getViromeSummary <- function(virome = NULL) {
     dplyr::summarise(median = median(node_coverage_norm)) %>%
     dplyr::pull(median)
 
+  # Get mean normalized coverage
+  meanNormCov <- virome %>% dplyr::select(node_coverage_norm) %>%
+    dplyr::summarise(mean = mean(node_coverage_norm)) %>%
+    dplyr::pull(mean)
+
   # Get max normalized coverage
   maxNormCov <- virome %>% dplyr::select(node_coverage_norm) %>%
     dplyr::summarise(max = max(node_coverage_norm)) %>%
     dplyr::pull(max)
 
-  returnVec <- c(sotuCount, medianNormCov, maxNormCov)
-  names(returnVec) <- c("numSOTUs", "medianNormCov", "maxNormCov")
+  # Get virus positive runs
+  virusPos <- virome %>% dplyr::select(run) %>% unique() %>% nrow()
+
+  # Get total runs processed
+  totalRuns <- runData %>% dplyr::select(run) %>% unique() %>% nrow()
+
+  returnVec <- c(sotuCount, meanNormCov, medianNormCov, maxNormCov, virusPos,
+                 totalRuns)
+  names(returnVec) <- c("Unique sOTUs", "Mean Coverage", "Median Coverage",
+                        "Max Coverage", "Virus Positive Runs", "Runs Processed")
 
   return(returnVec)
+}
+
+#' @title getAvailablePhyla
+#'
+#' @description Returns a list of phyla that are present in the virome.
+#' Mostly for use by the shiny frontend.
+#'
+#' @param virome A virome object
+#'
+#' @return A character vector of phyla
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax="Canis", con=con)
+#' phyla <- getAvailablePhyla(virome = virome)
+#'
+#' @import dplyr
+#'
+#' @export
+getAvailablePhyla <- function(virome = NULL) {
+  if (is.null(virome)) {
+    stop("Please provide a virome object (see getVirome)")
+  }
+
+  virome <- virome[[1]]
+
+  phyla <- virome %>% dplyr::select(tax_phylum) %>% unique() %>%
+    dplyr::pull(tax_phylum)
+
+  return(phyla)
 }
 
 
