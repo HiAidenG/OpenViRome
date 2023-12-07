@@ -9,7 +9,7 @@
 #' @importFrom RColorBrewer brewer.pal
 #' @export
 palmPrevalence <- function(virome) {
-  virome <- virome[[1]]
+  virome <- virome[[1]] #
 
   # Collect unique sotus, and calculate the mean coverage across all runs
   # Then for each sotu, sum up the run and bio_project counts
