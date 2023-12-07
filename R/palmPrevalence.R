@@ -9,34 +9,36 @@
 #' @importFrom RColorBrewer brewer.pal
 #' @export
 palmPrevalence <- function(virome) {
+  virome <- virome[[1]] #
 
-  # Collect unique palm_ids, and calculate the mean coverage across all runs
-  # Then for each palm_id, sum up the run and bio_project counts
+  # Collect unique sotus, and calculate the mean coverage across all runs
+  # Then for each sotu, sum up the run and bio_project counts
   # Add the gb_pid as a column
   palms <- virome %>%
-    dplyr::select(palm_id, run, bio_project, node_coverage, gb_pid, tax_family) %>%
-    dplyr::group_by(palm_id) %>%
+    dplyr::select(sotu, run, bio_project, node_coverage_norm, gb_pid,
+                  tax_family) %>%
+    dplyr::group_by(sotu) %>%
     dplyr::summarise(runs = n_distinct(run),
                      bio_projects = n_distinct(bio_project),
-                     mean_coverage = mean(node_coverage),
+                     mean_coverage = mean(node_coverage_norm),
                      gb_pid = gb_pid[1],
                      tax_family = tax_family[1])
-
-  # Set a buffer size for the axes
-  buffer_size <- 0.5
-
-  # Adjust axis ranges to include dynamic buffer
-  x_range <- c(min(palms$runs) - buffer_size, max(palms$runs) + buffer_size)
-  y_range <- c(min(palms$bio_projects) - buffer_size, max(palms$bio_projects) + buffer_size)
 
   # Scale the mean coverage
   palms$mean_coverage <- log(palms$mean_coverage)
 
   # Add jitter to the data to avoid overplotting
   set.seed(123) # Setting seed for reproducibility
-  jitter_amount <- 0.7
-  palms$runs_jitter <- jitter(palms$runs, amount=jitter_amount)
-  palms$bio_projects_jitter <- jitter(palms$bio_projects, amount=jitter_amount)
+  jitter_amount <- 0.4
+
+  # Custom jitter function that ensures values do not go below 1
+  safe_jitter <- function(x, amount) {
+    jittered <- jitter(x, amount = amount)
+    pmax(jittered, 1)  # Ensuring that the jittered values do not fall below 1
+  }
+
+  palms$runs_jitter <- safe_jitter(palms$runs, amount = jitter_amount)
+  palms$bio_projects_jitter <- safe_jitter(palms$bio_projects, amount = jitter_amount)
 
   bins <- c(0, 40, 60, 80, 90, 100)
   color_labels <- c("0-40", "40-60", "60-80", "80-90", "90-100")
@@ -50,26 +52,29 @@ palmPrevalence <- function(virome) {
 
   # Plot
   plot <- plotly::plot_ly(palms, x=~runs_jitter, y=~bio_projects_jitter, color=~color,
-                          size=~mean_coverage, colors = named_colors, alpha=0.9,
+                          size=~mean_coverage, colors = named_colors, alpha=0.5,
                           type = 'scatter', mode = 'markers',
                           text = ~paste("Runs: ", runs,
                                         "<br>Bioprojects: ", bio_projects,
-                                        "<br>palm_id: ", palm_id,
-                                        '<br>log(Mean coverage): ',
+                                        "<br>sotu: ", sotu,
+                                        '<br>log(Normalized Mean Coverage): ',
                                         round(mean_coverage, digits=2),
                                         '<br>Genbank identity: ', gb_pid, '%'),
                           marker=list(sizemode = 'diameter',
                                       sizeref = 5,
                                       sizemin = 2)) %>%
-    plotly::layout(title='Palm Prevalence',
-                   xaxis = list(title = 'Number of Runs',
-                                tickmode = 'logarithmic',
-                                automargin = TRUE),
-                   yaxis = list(title = 'Number of BioProjects',
-                                tickmode = 'linear',
-                                automargin = TRUE),
+    plotly::layout(title='sOTU Virome Prevalence',
+                   xaxis = list(title = 'Runs',
+                                type = 'log',  # Set x-axis to logarithmic scale
+                                automargin = FALSE,
+                                range = c(log10(1-0.1), log10(max(palms$runs_jitter)+10))),
+                   yaxis = list(title = 'BioProjects',
+                                automargin = FALSE,
+                                type = 'log',
+                                range = c(log10(1-0.1), log10(max(palms$bio_projects_jitter)+1))),
                    legend = list(title = list(text = 'GenBank ID (%)')))
-
   # Return the plot object
   return(plot)
 }
+
+

@@ -92,11 +92,17 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for richness.
 #' @import dplyr
+#' @export
 getRichness <- function(virome) {
+
+  virome <- virome[[1]]
 
   richness <- virome %>%
     group_by(bio_sample) %>%
-    summarise(richness = n_distinct(sotu))
+    summarise(richness = n_distinct(sotu)) %>%
+    left_join(virome, by = "bio_sample") %>%
+    select(bio_sample, scientific_name, richness) %>%
+    distinct()
 
   return(richness)
 
@@ -116,19 +122,16 @@ getRichness <- function(virome) {
 #' column for type of diversity calculated. Each bio_sample is treated as a
 #' sample, and each sotu is treated as a species. Reads mapping to each sotu
 #' are treated as the abundance of that species.
-#' @importFrom dplyr filter group_by %>% summarise mutate
+#' @import dplyr
 getDiversity <- function(virome, mode = "shannon") {
-
-  con <- palmid::SerratusConnect()
-
-  virome <- getSpeciesCounts(virome, con) # get normalized counts for each sotu
+  virome <- virome[[1]]
 
   # Calculate proportion of coverage in each biosample
   virome <- virome %>%
     group_by(bio_sample) %>%
     mutate(total_coverage = sum(node_coverage_norm)) %>%
     mutate(prop = node_coverage_norm / total_coverage) %>%
-    select(bio_sample, sotu, prop)
+    select(bio_sample, sotu, prop, scientific_name)
 
   if (mode == "shannon") {
     diversity <- virome %>%
@@ -138,9 +141,15 @@ getDiversity <- function(virome, mode = "shannon") {
     diversity <- virome %>%
       group_by(bio_sample) %>%
       summarise(simpson = sum(prop^2), .groups = 'drop')
+
   } else {
     stop("Invalid mode specified. Use 'shannon' or 'simpson'.")
   }
+
+  # Add scientific name
+  diversity <- diversity %>%
+    left_join(virome %>% select(bio_sample, scientific_name) %>% distinct(),
+              by = "bio_sample")
 
   return(diversity)
 }
@@ -157,15 +166,17 @@ getDiversity <- function(virome, mode = "shannon") {
 #' @keywords internal
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for evenness.
-#' @importFrom dplyr filter group_by %>% summarise mutate
-getEvenness <- function(virome, con) {
+#' @import dplyr
+#' @export
+getEvenness <- function(virome) {
+
 
   # Calculate Shannon diversity
-  shannon <- getDiversity(virome, mode = "shannon", con=con)
+  shannon <- getDiversity(virome, mode = "shannon")
 
   # Calculate richness
   richness <- getRichness(virome)
-
+  richness <- richness %>% select(-scientific_name)
   # Join the two tables
   evenness <- shannon %>%
     full_join(richness, by = "bio_sample")
@@ -174,124 +185,123 @@ getEvenness <- function(virome, con) {
   evenness <- evenness %>%
     mutate(evenness = shannon / log(richness))
 
-  # only want to return the evenness column
-  evenness <- evenness %>%
-    select(bio_sample, evenness)
+  # Make NA and Infinite values 0
+  evenness[is.na(evenness)] <- 0
+
+  evenness <- evenness %>% select(bio_sample, scientific_name, evenness)
+
 
   return(evenness)
 
 }
 
-#' @title getSpeciesCounts
-#' @description Calculate the number of reads mapping to each sotu in a virome
-#' object.
-#' NOT EXPORTED
+#' @title viromeToAmpvis
+#' @description Convert a virome object to the ampvis2 otutable format where
+#' each row is a viral sOTU and each column is a biosample. The last two
+#' columns provide the tax_species and tax_phylum for each sOTU.
 #' @param virome A virome object
-#' @param con A database connection object (to Serratus SQL).
-#' @keywords internal
-#' @return A tibble with rows for each bioSample present in the virome and a
-#' column for each sotu, with the normalized number of reads mapping to that
-#' sotu.
-getSpeciesCounts <- function(virome = NULL, con = NULL) {
-
-  # Get the library size for normalization
-  runs <- distinct(virome, run) %>% pull(run)
-
-  # Get the library size for each run
-  librarySize <- tbl(con, "srarun") %>%
-    filter(run %in% runs) %>%
-    select(run, spots) %>%
-    collect()
-
-  # Scale the counts in virome by the library size
-  virome <- virome %>%
-    left_join(librarySize, by = 'run') %>%
-    mutate(node_coverage_norm = (node_coverage / spots) * 1e6) #scale by 1e6
-
-  # return(virome)
-  virome <- virome %>%
-    select(bio_sample, sotu, node_coverage_norm)
-
-  return(virome)
-
-}
-
-#' @title getBetaDiversity
-#' @description Calculate pairwise Bray-curtis dissimilarity of a virome object
-#' for all bioSamples present in the virome. Bray-curtis dissimilarity is
-#' defined as sum(|x_ij - x_ik|) / sum(x_ij + x_ik), where where x_ij and
-#' x_ik are the number of reads mapping to sotu i and bioSample j and k,
-#' respectively.
-#' @param virome A virome object
-#' @return A tibble with rows for each bioSample present in the virome and a
-#' column for each bioSample, with the Bray-curtis dissimilarity between the
-#' two bioSamples.
+#' @import dplyr tidyr
 #' @export
-getBetaDiversity <- function(virome) {
+virometoOTUTable <- function(virome) {
+  data <- virome[[1]]
 
-  con <- palmid::SerratusConnect()
+  # Get the sOTU table
+  sotuTable <- data %>%
+    group_by(bio_sample, sotu) %>%
+    summarise(count = sum(node_coverage_norm)) %>%
+    pivot_wider(names_from = bio_sample, values_from = count, values_fill = 0)
 
-  virome <- getSpeciesCounts(virome, con)
+  # Add the taxonomic information
+  sotuTable <- sotuTable %>%
+    left_join(data %>% select(sotu, tax_phylum) %>% distinct(), by = "sotu") %>%
+    left_join(data %>% select(sotu, tax_species) %>% distinct(), by = "sotu")
 
-  # Calculate the pairwise Bray-curtis dissimilarity
-  betaDiversity <- virome %>%
-    pivot_wider(names_from = sotu, values_from = prop,
-                values_fill = 0) %>%
-    column_to_rownames("bio_sample") %>%
-    as.matrix() %>%
-    vegdist(method = "bray", na.rm=TRUE)
+  # Rename so ampvis will recognize
+  sotuTable <- sotuTable %>%
+    rename(phylum = tax_phylum, species = tax_species, otu=sotu)
 
-  # Convert to a tibble
-  betaDiversity <- as_tibble(as.matrix(betaDiversity))
-  rownames(betaDiversity) <- colnames(betaDiversity)
-  return(betaDiversity)
+  return(sotuTable)
 }
 
-#' @title getAmpvisData
-#' @description Return an OTU-table and metadata table in ampvis format
-#' (OTUs as rows, samples as columns), values are the normalized number of
-#' reads mapping to each OTU in each sample. Metadata table is a subset of the
-#' palm_virome table. Columns are:
-#' - bioSample: BioSample accession
-#' - bioProject: BioProject accession
-#' - source: Metadata annotation of the BioSample source species
-#' NOT EXPORTED
-#' @param virome A virome object
-#' @param con A database connection object (to Serratus SQL).
-#' @keywords internal
-#' @return A data.frame with OTUs as rows and samples as columns, with values
-#' being the normalized number of reads mapping to each OTU in each sample.
-getAmpvisCounts <- function(virome, con) {
+#' @title viromeToMetadata
+#' @description Convert a virome object to the metadata table format specified
+#' in ampvis2. First column specifies biosample id's, second column specifies
+#' bioproject id's, third column is the scientific_name of the sample.
+#' @import dplyr
+#' @export
+virometoMetadataTable <- function(virome) {
+  data <- virome[[1]]
 
-  counts <- getSpeciesCounts(virome, con)
-  families <- virome %>%
-    select(sotu, tax_family) %>%
+  # Get the metadata table
+  metadata <- data %>%
+    select(bio_sample, scientific_name, bio_project) %>%
     distinct()
-  counts <- counts %>%
-    left_join(families, by = c("sotu" = "sotu"))
 
+  return(metadata)
+}
 
-  counts <- counts %>%
-    pivot_wider(names_from = bio_sample, values_from = node_coverage_norm)
+#' @title plotAlphaDiversity
+#' @description Automatically plots Simpson, Shannon, and Pielou evenness for
+#' a virome object.
+#' @param virome A virome object
+#' @param mode Whether to calculate Shannon or Simpson diversity.
+#' Default = 'shannon'.
+#' @import ggplot2
+#' @import dplyr
+#' @import cowplot
+plotAlphaDiversity <- function(virome, mode = "shannon") {
+  # Get alpha diversity
+  alphaDiversity <- getDiversity(virome, mode = mode)
 
-  #
-  # # rename columns so ampvis recognizes them
-  # colnames(counts)[1] <- "otu"
-  # colnames(counts)[2] <- "family"
-  #
-  # # Make all other columns numeric
-  # counts[,3:ncol(counts)] <- apply(counts[,3:ncol(counts)], 2, as.numeric)
-  #
-  # counts$family[is.na(counts$family)] <- "null"
-  # # make missing numeric values 0 (some runs have 0 spots?)
-  # counts[is.na(counts)] <- 0
-  #
-  # # get metadata table
-  # metadata <- virome %>%
-  #   select(bio_sample, bio_project, scientific_name) %>%
-  #   distinct()
-  #
-  # return(list(counts, metadata))
+  # Get evenness
+  evenness <- getEvenness(virome)
+  evenness <- evenness %>% select(-scientific_name)
+
+  # Join the tables
+  alphaDiversity <- alphaDiversity %>%
+    left_join(evenness, by = "bio_sample")
+
+  # Get distinct genera
+  alphaDiversity <- alphaDiversity %>%
+    mutate(genus = gsub(" .*", "", scientific_name))
+  genera <- alphaDiversity %>% select(genus) %>% distinct()
+
+  # Set colors for each genus
+  colors <- grDevices::palette.colors(n = nrow(genera), alpha=0.5)
+
+  # Assign colors to each genus
+  alphaDiversity <- alphaDiversity %>%
+    left_join(genera, by = "genus") %>%
+    mutate(color = colors)
+
+  alphaDiversity$hover_info <- paste("Biosample: ", alphaDiversity$bio_sample)
+
+  # Plot
+    if (mode == "shannon") {
+        p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~shannon,
+                      color = ~color, type = "box",
+                      boxpoints = "all", jitter = 0.3, pointpos = 0.0,
+                      line = list(width = 0),
+                      fillcolor = "rgba(0,0,0,0)",
+                      name = mode,
+                      text = ~hover_info,  # Add hover text
+                      hoverinfo = "text+y") %>%
+            layout(yaxis = list(title = "Shannon Diversity"),
+                   xaxis = list(title = "Source Species"))
+    } else if (mode == "simpson") {
+        p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~simpson,
+                      color = ~color, type = "box",
+                      boxpoints = "all", jitter = 0.3, pointpos = 0.0,
+                      line = list(width = 0),
+                      fillcolor = "rgba(0,0,0,0)",
+                      name = mode,
+                      text = ~hover_info,  # Add hover text
+                      hoverinfo = "text+y") %>%
+            layout(yaxis = list(title = "Simpson Diversity"),
+                   xaxis = list(title = "Source Species"))
+    }
+
+    return(p1)
 }
 
 
