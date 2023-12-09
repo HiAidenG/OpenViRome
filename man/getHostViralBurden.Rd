@@ -21,5 +21,6 @@ for each source species.
 \examples{
 con <- palmid::SerratusConnect()
 virome <- getVirome(tax = "Meloidogyne", con = con)
-getHostViralBurden(virome = virome, con = con)
+vbDF <- getHostViralBurden(virome = virome, con = con)
+
 }

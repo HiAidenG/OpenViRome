@@ -184,7 +184,7 @@ getVirusTaxonomy <- function(otu = NULL, con = NULL) {
 #'
 #' @return A character vector of taxons
 #'
-#' @import taxize
+#' @import taxizedb
 nameVecToRank <- function(names = NULL, taxRank = NULL) {
   if (is.null(names) | is.null(taxRank)) {
     stop("Must provide both a vector of names and a vector of taxonomic ranks")
@@ -198,7 +198,7 @@ nameVecToRank <- function(names = NULL, taxRank = NULL) {
   for (i in 1:length(names)) {
     if (!is.null(names[i])) {
       class <- tryCatch({
-        taxize::classification(names[i], db = 'ncbi')[[1]]
+        taxizedb::classification(names[i], db = 'ncbi')[[1]]
       }, error = function(e) NULL)
 
       # Check if class is a dataframe or list and contains the rank column

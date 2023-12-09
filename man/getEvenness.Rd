@@ -4,7 +4,7 @@
 \alias{getEvenness}
 \title{getEvenness}
 \usage{
-getEvenness(virome, con)
+getEvenness(virome)
 }
 \arguments{
 \item{virome}{A virome object}

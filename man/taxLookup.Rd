@@ -4,7 +4,7 @@
 \alias{taxLookup}
 \title{taxLookup}
 \usage{
-taxLookup(tax, con)
+taxLookup(tax = NULL, con = NULL)
 }
 \arguments{
 \item{tax}{A taxon defined in NCBI taxonomy. Must be type char.}

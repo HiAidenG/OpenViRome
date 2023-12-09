@@ -1,18 +1,14 @@
 library(shiny)
 library(palmid)
-library(ampvis2)
 library(plotly)
 library(tidyr)
 library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
-library(taxizedb)
 library(bs4Dash)
 require(circlize)
-require(ComplexHeatmap)
+require(grDevices)
 require(fresh)
-require(waiter)
-require(shinyjs)
 
 
 viromeTheme <- fresh::create_theme(

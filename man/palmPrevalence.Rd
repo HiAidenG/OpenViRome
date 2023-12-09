@@ -14,5 +14,13 @@ A plotly scatterplot
 }
 \description{
 For every sotu in a virome, plot the number of runs in which
-it was found against the number of bioprojects
+it was found against the number of bioprojects. Points are sized by
+normalized mean coverage. Colors are genbank divergence.
+}
+\examples{
+con <- palmid::SerratusConnect()
+virome <- getVirome("Meloidogyne", con = con)
+palmPrevalence(virome)
+
+
 }

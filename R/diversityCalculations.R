@@ -302,7 +302,6 @@ viromeToMetadataTable <- function(virome = NULL) {
 #'
 #' @import ggplot2
 #' @import dplyr
-#' @import cowplot
 #'
 #' @examples
 #' con <- palmid::SerratusConnect()

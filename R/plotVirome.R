@@ -185,8 +185,6 @@ drawVirusSankey <- function(virome, phylumFilter = NULL, colors = NULL) {
 #' @import dplyr
 #' @import RColorBrewer
 #' @import grDevices
-#'
-#' @tags interal
 plottingHelper <- function(virome = NULL, phylumFilter = NULL, colors = NULL) {
   virome <- virome[[1]]
 

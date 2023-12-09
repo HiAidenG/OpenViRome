@@ -4,7 +4,7 @@
 \alias{viroMap}
 \title{viroMap}
 \usage{
-viroMap(virome = NULL, minCov = 2)
+viroMap(virome = NULL, minCov = 0)
 }
 \arguments{
 \item{virome}{A tbl_df containing the virome data.}

@@ -6,13 +6,18 @@
 \usage{
 plotVirusPositive(vbDF = NULL)
 }
+\arguments{
+\item{vbDF}{viral burden dataframe. See getHostViralBurden()}
+}
 \value{
 A plotly bar chart
 }
 \description{
-Plots the proportion of virus positive runs for each taxon
+Plots the proportion of virus positive runs for each source
+species in the virome.
 }
 \examples{
 vbDF <- getHostViralBurden(virome = virome)
 plotVirusPositive(vbDF)
+
 }
