@@ -1,3 +1,5 @@
+# plotVirome.R
+
 #' @title plotViromePie
 #'
 #' @description Returns a plotly pie chart of predicted phyla for unique sOTUs
@@ -175,6 +177,7 @@ drawVirusSankey <- function(virome, phylumFilter = NULL, colors = NULL) {
 #' @description Helper function for the pie chart and sankey diagram functions.
 #' Does some sanity checks on user's input filters the data based on the
 #' provided phylumFilter.
+#' NOT EXPORTED
 #'
 #' @returns Filtered virome object with an added column for colors assigned to
 #' phyla.
@@ -234,10 +237,4 @@ plottingHelper <- function(virome = NULL, phylumFilter = NULL, colors = NULL) {
 
 }
 
-
-
-
-
-
-
-
+# [END]
