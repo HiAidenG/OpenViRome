@@ -1,15 +1,28 @@
-#palmPrevalence
+# palmPrevalence.R
+
 #' @title palmPrevalence
+#'
 #' @description For every sotu in a virome, plot the number of runs in which
-#' it was found against the number of bioprojects
+#' it was found against the number of bioprojects. Points are sized by
+#' normalized mean coverage. Colors are genbank divergence.
+#'
 #' @param virome A virome object
+#'
 #' @return A plotly scatterplot
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome("Meloidogyne", con = con)
+#' palmPrevalence(virome)
+#'
+#'
 #' @importFrom dplyr select group_by summarise n_distinct
 #' @importFrom plotly plot_ly layout add_trace
 #' @importFrom RColorBrewer brewer.pal
+#'
 #' @export
 palmPrevalence <- function(virome) {
-  virome <- virome[[1]] #
+  virome <- virome[[1]]
 
   # Collect unique sotus, and calculate the mean coverage across all runs
   # Then for each sotu, sum up the run and bio_project counts
@@ -77,4 +90,4 @@ palmPrevalence <- function(virome) {
   return(plot)
 }
 
-
+# [END]

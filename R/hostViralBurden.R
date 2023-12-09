@@ -1,15 +1,24 @@
+# hostViralBurden.R
+
 #' @title getHostViralBurden
+#'
 #' @description Takes a virome object as input and re-queries Serratus to get
 #' the incidence of viral RNA positive SRA runs out of the total number queried
 #' for each source species.
+#'
 #' @param virome A virome object
+#'
 #' @return A data frame with the total number of runs queried and the number
 #' of runs that were virus positive for each source species.
+#'
 #' @examples
 #' con <- palmid::SerratusConnect()
 #' virome <- getVirome(tax = "Meloidogyne", con = con)
-#' getHostViralBurden(virome = virome, con = con)
+#' vbDF <- getHostViralBurden(virome = virome, con = con)
+#'
 #' @import dplyr
+#'
+#' @export
 getHostViralBurden <- function(virome = NULL) {
 
   if (is.null(virome)) {
@@ -27,17 +36,24 @@ getHostViralBurden <- function(virome = NULL) {
 }
 
 #' @title plotVirusPositive
-#' @description Plots the proportion of virus positive runs for each taxon
+#'
+#' @description Plots the proportion of virus positive runs for each source
+#' species in the virome.
+#'
 #' @param vbDF viral burden dataframe. See getHostViralBurden()
+#'
 #' @return A plotly bar chart
+#'
 #' @importFrom dplyr group_by %>% summarise collect left_join
 #' @importFrom tidyr pivot_longer
 #' @importFrom plotly plot_ly layout
 #' @importFrom RColorBrewer brewer.pal
-#' @export
+#'
 #' @examples
 #' vbDF <- getHostViralBurden(virome = virome)
 #' plotVirusPositive(vbDF)
+#'
+#' @export
 plotVirusPositive <- function(vbDF = NULL) {
   # Add a column for virus negative counts
   vbDF <- vbDF %>%
@@ -63,19 +79,4 @@ plotVirusPositive <- function(vbDF = NULL) {
   return(p)
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# [END]

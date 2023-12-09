@@ -1,17 +1,23 @@
+# diversityCalculations.R
+
 #' @title getAlphaDiveristy
+#'
 #' @description A wrapper function for calculating various metrics of alpha
 #' diversity for a virome object. Options to calculate Shannon diversity,
 #' Simpson diversity, species richness, and Pielou evenness. Each bioSample
 #' is treated as an independent sample for calculating these metrics. A more
 #' detailed explanation in the context of SRA virome data is available in the
 #' vignette.
+#'
 #' @param virome A virome object
 #' @param bioSample Optional argument for filtering the virome by BioSample
 #' @param mode A character vector of diversity metrics to calculate. Options:
 #' "shannon", "simpson", "richness", "evenness". Default is "shannon".
+#'
 #' @return A tibble with columns for each diversity metric calculated.
+#'
 #' @import dplyr
-#' @export
+#'
 #' @examples
 #' # Calculate Shannon diversity for all virome data
 #' data("TylenchoideaVirome")
@@ -26,6 +32,8 @@
 #' # Calculate all metrics for all virome data
 #' getAlphaDiversity(TylenchoideaVirome, mode = c("shannon", "simpson",
 #'                   "richness", "evenness"))
+#'
+#' @export
 getAlphaDiversity <- function(virome = NULL, mode = "shannon",
                               bioSample = NULL) {
   if (is.null(virome)) {
@@ -84,15 +92,19 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
 }
 
 #' @title getRichness
+#'
 #' @description Calculate species richness (i.e. number of unique viral
 #' families) of a virome object.
 #' NOT EXPORTED
+#'
 #' @param virome A virome object
+#'
 #' @keywords internal
+#'
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for richness.
+#'
 #' @import dplyr
-#' @export
 getRichness <- function(virome) {
 
   virome <- virome[[1]]
@@ -109,19 +121,24 @@ getRichness <- function(virome) {
 }
 
 #' @title getDiversity
+#'
 #' @description Calculate either Shannon or Simpson diversity of a virome object
 #' Note: There are multiple metrics referred to in the literature as "Simpson
 #' diveristy". This function calculates the D_0, which is the probability that
 #' two randomly selected reads will be of the same sotu.
 #' NOT EXPORTED
+#'
 #' @param virome A virome object
 #' @param mode Either "shannon" or "simpson"
 #' @param con A database connection object (to Serratus SQL).
+#'
 #' @keywords internal
+#'
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for type of diversity calculated. Each bio_sample is treated as a
 #' sample, and each sotu is treated as a species. Reads mapping to each sotu
 #' are treated as the abundance of that species.
+#'
 #' @import dplyr
 getDiversity <- function(virome, mode = "shannon") {
   virome <- virome[[1]]
@@ -155,6 +172,7 @@ getDiversity <- function(virome, mode = "shannon") {
 }
 
 #' @title getEvenness
+#'
 #' @description Calculate Pielou evenness of a virome object.
 #' Note: Pielou evenness is defined as the Shannon diversity divided by the
 #' natural log of the richness. Evenness metrics have known issues as they
@@ -162,11 +180,16 @@ getDiversity <- function(virome, mode = "shannon") {
 #' can be variable between samples (due to sequencing depth). Some values
 #' may be NaN if the richness is 1.
 #' NOT EXPORTED
+#'
 #' @param virome A virome object
+#'
 #' @keywords internal
+#'
 #' @return A tibble with rows for each bioSample present in the virome and a
 #' column for evenness.
+#'
 #' @import dplyr
+#'
 #' @export
 getEvenness <- function(virome) {
 
@@ -195,14 +218,24 @@ getEvenness <- function(virome) {
 
 }
 
-#' @title viromeToAmpvis
+#' @title viromeToOTUTable
+#'
 #' @description Convert a virome object to the ampvis2 otutable format where
 #' each row is a viral sOTU and each column is a biosample. The last two
 #' columns provide the tax_species and tax_phylum for each sOTU.
+#'
 #' @param virome A virome object
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax = "Salidae", con = con)
+#' otuTable <- viromeToOTUTable(virome)
+#' head(otuTable)
+#'
 #' @import dplyr tidyr
+#'
 #' @export
-virometoOTUTable <- function(virome) {
+viromeToOTUTable <- function(virome) {
   data <- virome[[1]]
 
   # Get the sOTU table
@@ -213,8 +246,10 @@ virometoOTUTable <- function(virome) {
 
   # Add the taxonomic information
   sotuTable <- sotuTable %>%
-    left_join(data %>% select(sotu, tax_phylum) %>% distinct(), by = "sotu") %>%
-    left_join(data %>% select(sotu, tax_species) %>% distinct(), by = "sotu")
+    left_join(data %>% select(sotu, tax_phylum) %>% distinct(), by = "sotu",
+              multiple = "first") %>%
+    left_join(data %>% select(sotu, tax_species) %>% distinct(), by = "sotu",
+              multiple = "first")
 
   # Rename so ampvis will recognize
   sotuTable <- sotuTable %>%
@@ -223,13 +258,26 @@ virometoOTUTable <- function(virome) {
   return(sotuTable)
 }
 
-#' @title viromeToMetadata
+#' @title viromeToMetadataTable
+#'
 #' @description Convert a virome object to the metadata table format specified
 #' in ampvis2. First column specifies biosample id's, second column specifies
 #' bioproject id's, third column is the scientific_name of the sample.
+#'
 #' @import dplyr
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax = "Salidae", con = con)
+#' metadata <- viromeToMetadataTable(virome)
+#' head(metadata)
+#'
 #' @export
-virometoMetadataTable <- function(virome) {
+viromeToMetadataTable <- function(virome = NULL) {
+  if (is.null(virome)) {
+    stop("Must provide a virome object.")
+  }
+
   data <- virome[[1]]
 
   # Get the metadata table
@@ -240,15 +288,27 @@ virometoMetadataTable <- function(virome) {
   return(metadata)
 }
 
+
+# TODO: This needs to be fixed, breaks when plotting many genera.
 #' @title plotAlphaDiversity
+#'
 #' @description Automatically plots Simpson, Shannon, and Pielou evenness for
 #' a virome object.
+#'
 #' @param virome A virome object
+#'
 #' @param mode Whether to calculate Shannon or Simpson diversity.
 #' Default = 'shannon'.
+#'
 #' @import ggplot2
 #' @import dplyr
-#' @import cowplot
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax = "Salidae", con = con)
+#' plotAlphaDiversity(virome, mode = "simpson")
+#'
+#' @export
 plotAlphaDiversity <- function(virome, mode = "shannon") {
   # Get alpha diversity
   alphaDiversity <- getDiversity(virome, mode = mode)
@@ -304,11 +364,45 @@ plotAlphaDiversity <- function(virome, mode = "shannon") {
     return(p1)
 }
 
+#' @title plotBetaDiversity
+#'
+#' @description Automatically plots beta diversity for a virome object using
+#' ampvis2. This is the plot used for the shiny frontend, and uses Bray-Curtis
+#' dissimilarity with PCOA. There are other options for plotting beta diversity,
+#' see https://kasperskytte.github.io/ampvis2/articles/ampvis2.html#ordination.
+#'
+#' @param virome A virome object
+#'
+#' @import ampvis2
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax = "Salidae", con = con)
+#' plotBetaDiversity(virome)
+#'
+#' @export
+plotBetaDiversity <- function(virome = NULL) {
+
+  if (is.null(virome)) {
+    stop("Must provide a virome object.")
+  }
+
+  # Get the sOTU table
+  sotuTable <- viromeToOTUTable(virome)
+
+  # Get the metadata table
+  metadata <- viromeToMetadataTable(virome)
+
+  # Plot
+  d <- ampvis2::amp_load(otutable = sotuTable, metadata = metadata)
+  p1 <- ampvis2::amp_ordinate(d, type = "PCOA", distmeasure = "bray",
+                               transform = "none",
+                               sample_color_by = "scientific_name",
+                               sample_plotly = "all",
+                               filter_species = 0.0
+                               )
+
+  return(p1)
+}
 
 # [END]
-
-
-
-
-
-

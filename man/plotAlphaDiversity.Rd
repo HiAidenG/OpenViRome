@@ -4,12 +4,21 @@
 \alias{plotAlphaDiversity}
 \title{plotAlphaDiversity}
 \usage{
-plotAlphaDiversity(virome)
+plotAlphaDiversity(virome, mode = "shannon")
 }
 \arguments{
 \item{virome}{A virome object}
+
+\item{mode}{Whether to calculate Shannon or Simpson diversity.
+Default = 'shannon'.}
 }
 \description{
 Automatically plots Simpson, Shannon, and Pielou evenness for
 a virome object.
+}
+\examples{
+con <- palmid::SerratusConnect()
+virome <- getVirome(tax = "Salidae", con = con)
+plotAlphaDiversity(virome, mode = "simpson")
+
 }

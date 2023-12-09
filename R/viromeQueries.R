@@ -92,24 +92,39 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
 
 }
 
-
 #' @title taxLookup
+#'
 #' @description Return a list of all runs processed by Serratus that match
 #' tax. Used internally by getVirome.
 #  NOT EXPORTED
+
 #' @param tax A taxon defined in NCBI taxonomy. Must be type char.
 #' @param con A connection to the Serratus database
+#'
 #' @return A character vector of SRA accessions.
+#'
 #' @import dplyr
-taxLookup <- function(tax, con) {
+taxLookup <- function(tax = NULL, con = NULL) {
+
+  if (is.null(con)) {
+    stop("Please provide a connection to the Serratus database
+         (see palmid::SerratusConnect)")
+  }
+
+  if (is.null(tax)) {
+    stop("Please provide a taxonomic term")
+  }
+
   # Get ranking of taxonomic term
   class <- taxizedb::classification(tax, db = 'ncbi')[[1]]
-  # Check if a species was provided
-  rank <- class[class$name == tax, 'rank']
-  if (is.null(rank) || length(rank) == 0) {
+
+  if (length(class) == 1) { # Should be length > 1 if valid term
     stop("Error: could not find taxonomic term in NCBI taxonomy database")
   }
-  else if (rank == 'species') {
+
+  # Check if a species was provided
+  rank <- class[class$name == tax, 'rank']
+  if (rank == 'species') {
     searchTerms <- class[class$name == tax, 'id']
   }
   else {
@@ -160,12 +175,16 @@ getVirusTaxonomy <- function(otu = NULL, con = NULL) {
 }
 
 #' @title nameVecToRank
+#'
 #' @description Convert a vector of scientific names to the specified taxonomic
 #' ranks for those names.
+#'
 #' @param names A character vector of scientific names
 #' @param taxRank A character vector of taxonomic ranks
+#'
 #' @return A character vector of taxons
-#' @import taxize
+#'
+#' @import taxizedb
 nameVecToRank <- function(names = NULL, taxRank = NULL) {
   if (is.null(names) | is.null(taxRank)) {
     stop("Must provide both a vector of names and a vector of taxonomic ranks")
@@ -179,7 +198,7 @@ nameVecToRank <- function(names = NULL, taxRank = NULL) {
   for (i in 1:length(names)) {
     if (!is.null(names[i])) {
       class <- tryCatch({
-        taxize::classification(names[i], db = 'ncbi')[[1]]
+        taxizedb::classification(names[i], db = 'ncbi')[[1]]
       }, error = function(e) NULL)
 
       # Check if class is a dataframe or list and contains the rank column
@@ -286,7 +305,52 @@ getAvailablePhyla <- function(virome = NULL) {
   return(phyla)
 }
 
+#' @title viromeFormatCheck
+#'
+#' @description Checks if the virome object is in the correct format. Mostly for
+#' use with the shiny frontend.
+#'
+#' @param virome A virome object
+#'
+#' @return A boolean value
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax="Canis", con=con)
+#' if (viromeFormatCheck(virome = virome)) {
+#'  print("Virome is in the correct format.")
+#' }
+#'
+#' @import dplyr
+viromeFormatCheck <- function(virome = NULL) {
+  if (is.null(virome)) {
+    stop("Please provide a virome object (see getVirome)")
+  }
 
+  if (length(virome) != 2) {
+    return(FALSE)
+  }
+
+  if (!is.data.frame(virome[[1]])) {
+    return(FALSE)
+  }
+
+  if (!is.data.frame(virome[[2]])) {
+    return(FALSE)
+  }
+
+  if (!all(c("sotu", "tax_phylum", "tax_species", "node_coverage_norm",
+             "run", "bio_sample", "bio_project", "scientific_name",
+             "gb_pid") %in%
+             colnames(virome[[1]]))) {
+    return(FALSE)
+  }
+
+  if (!all(c("run", "node_coverage") %in% colnames(virome[[2]]))) {
+    return(FALSE)
+  }
+
+  return(TRUE)
+}
 
 # [END]
-
