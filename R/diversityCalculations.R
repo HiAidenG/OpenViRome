@@ -328,11 +328,10 @@ plotAlphaDiversity <- function(virome, mode = "shannon") {
 
   # Set colors for each genus
   colors <- grDevices::palette.colors(n = nrow(genera), alpha=0.5)
+  genera <- genera %>% mutate(color = colors)
 
   # Assign colors to each genus
-  alphaDiversity <- alphaDiversity %>%
-    left_join(genera, by = "genus") %>%
-    mutate(color = colors)
+  alphaDiversity <- alphaDiversity %>% left_join(genera, by = "genus")
 
   alphaDiversity$hover_info <- paste("Biosample: ", alphaDiversity$bio_sample)
 

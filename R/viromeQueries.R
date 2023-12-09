@@ -327,26 +327,14 @@ viromeFormatCheck <- function(virome = NULL) {
     stop("Please provide a virome object (see getVirome)")
   }
 
-  if (length(virome) != 2) {
-    return(FALSE)
-  }
-
-  if (!is.data.frame(virome[[1]])) {
-    return(FALSE)
-  }
-
-  if (!is.data.frame(virome[[2]])) {
+  if (!is.data.frame(virome)) {
     return(FALSE)
   }
 
   if (!all(c("sotu", "tax_phylum", "tax_species", "node_coverage_norm",
              "run", "bio_sample", "bio_project", "scientific_name",
              "gb_pid") %in%
-             colnames(virome[[1]]))) {
-    return(FALSE)
-  }
-
-  if (!all(c("run", "node_coverage") %in% colnames(virome[[2]]))) {
+             colnames(virome))) {
     return(FALSE)
   }
 

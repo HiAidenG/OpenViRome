@@ -30,7 +30,8 @@ Imports:
     grDevices,
     palmid,
     ampvis2,
-    ComplexHeatmap
+    ComplexHeatmap,
+    circlize
 Remotes:
     github::ababaian/palmid,
     github::kasperskytte/ampvis2,

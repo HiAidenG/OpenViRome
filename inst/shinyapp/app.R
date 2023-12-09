@@ -1,3 +1,5 @@
+# app.R
+
 library(shiny)
 library(palmid)
 library(plotly)
@@ -95,7 +97,7 @@ ui <- bs4DashPage(
                                 width = 6,
                                 solidHeader = FALSE,
                                 status = "primary",
-                                fileInput("uploadVirome", label = NULL,
+                                fileInput("uploadFile", label = NULL,
                                           placeholder = "Upload Virome",
                                           width = '50%'),
                                 actionButton("submitFile", "Submit", style = "width: 50%;")
@@ -176,19 +178,20 @@ ui <- bs4DashPage(
           )
         )
       ), # Close ViromeDiversity
-      bs4TabItem(
-        tabName = "sOTUHeatmap",
-        h2("sOTU Heatmap"),
-        fluidRow(
-          bs4Dash::bs4Card(
-            title = "Heatmap",
-            plotOutput("viroHeatMap", height = "600px"),
-            width = 12,
-            collapsible = TRUE,
-            maximizable = TRUE
-          )
-        )
-      ),
+      # TODO: heatmap still doesn't display properly
+      # bs4TabItem(
+      #   tabName = "sOTUHeatmap",
+      #   h2("sOTU Heatmap"),
+      #   fluidRow(
+      #     bs4Dash::bs4Card(
+      #       title = "Heatmap",
+      #       plotOutput("viroHeatMap", height = "600px"),
+      #       width = 12,
+      #       collapsible = TRUE,
+      #       maximizable = TRUE
+      #     )
+      #   )
+      # ),
       bs4TabItem(
         tabName = "sOTUScatter",
         h2("sOTU Scatterplot"),
@@ -257,8 +260,6 @@ server <- function(input, output, session) {
   })
 
 
-
-
   # ======================= Upload button ============================
   observeEvent(input$submitFile, {
 
@@ -267,12 +268,31 @@ server <- function(input, output, session) {
     virome <- tibble::as_tibble(virome)
 
     # Check formatting
-    if (!viromeFormatCheck(virome = virome)) {
-      stop("Uploaded file does not have the correct format. Please see the 'help' for more information.")
-    }
+    tryCatch({
+      viromeFormatCheck(virome = virome)
 
-    viromeData(virome)
+      showModal(modelDialog(
+        title = "Processing...",
+        "Retrieving run data. This should only take a moment.",
+        easyClose = TRUE,
+        footer = NULL
+      ))
 
+      con <- palmid::SerratusConnect()
+      # TODO: this doesn't work, but it's a temporary fix
+      # Use first row as tax
+      tax <- virome[1, "scientific_name"][[1]]
+      tax <- strsplit(tax, " ")[[1]][1]
+      runDF <- taxLookup(tax = tax, con = con)
+      virome <- list(virome, runDF)
+
+      viromeData(virome)
+
+      hideModal()
+
+    }, error = function(e) {
+      showNotification("Error: Uploaded file does not have the correct format. Please see 'help' for more information.", type = "error")
+    })
   })
 
 
@@ -481,3 +501,5 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = ui, server = server)
+
+# [END]
