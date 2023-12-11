@@ -268,8 +268,6 @@ server <- function(input, output, session) {
     virome <- read.csv(input$uploadFile$datapath)
     virome <- tibble::as_tibble(virome)
 
-    # Check formatting
-      #viromeFormatCheck(virome = virome)
     tryCatch({
       viromeFormatCheck(virome = virome)
 

@@ -315,6 +315,8 @@ getAvailablePhyla <- function(virome = NULL) {
 #' }
 #'
 #' @import dplyr
+#'
+#' @export
 viromeFormatCheck <- function(virome = NULL) {
   if (is.null(virome)) {
     stop("Please provide a virome object (see getVirome)")
