@@ -8,6 +8,7 @@
 A list of data frames. The first has 611 rows and 20 columns.
 Each row represents a single palm_id, with the corresponding run in which it was identified, as well as the
 viral species to which is belongs (sOTU). Columns as follows:
+
 \describe{
 \item{run}{SRA run accession number.}
 \item{scientific_name}{Metadata annotation for the library source species.}
@@ -31,15 +32,21 @@ virus.}
 \item{node_coverage_norm}{Normalized coverage of the vOTU in this library.}
 \item{tax_phylum}{Taxonomic phylum annotation for the GenBank aligned sequence}
 }
+
 The second data frame has 408 rows and 5 columns. This is a table of all
 runs queried by Serratus annotated as being associated with the 'Tylenchoidea'
 superfamily. Columns as follows:
+
 \describe{
 \item{run}{SRA run accession number.}
 \item{scientific_name}{Metadata annotation for the library source species.}
 \item{tax_id}{NCBI taxonomy identifier for the library source species.}
 \item{spots}{Number of spots (reads) in the library.}
 \item{virus_positive}{Bool; whether a palm print was detected in this library.}
+}
+}
+\source{
+https://serratus.io
 }
 \usage{
 TylenchoideaVirome

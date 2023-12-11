@@ -73,7 +73,7 @@ ui <- bs4DashPage(
         ), # Row 1 close
         fluidRow(
           bs4Dash::box(title = "Query Serratus",
-                       p("Here you can query Serratus data either by taxonomic name (at any rank) or by comma-separated SRA accessions."),
+                       p("Here you can query Serratus data either by taxonomic name (at any rank, like 'Meloidogyne') or by comma-separated SRA accessions. Be aware that large taxonomic groups may take a long time to query."),
                        closable = FALSE,
                        collapsible = FALSE,
                        width = 6,
@@ -92,6 +92,7 @@ ui <- bs4DashPage(
           bs4Dash::box(title = "Upload Virome",
                                 p("Upload a formatted virome file in CSV format."),
                                 p("See the 'help' tab for more information."),
+                                p("Example .csv provided at OpenViRome/inst/extdata/Meloidogyne_virome.csv"),
                                 closable = FALSE,
                                 collapsible = FALSE,
                                 width = 6,
@@ -268,10 +269,11 @@ server <- function(input, output, session) {
     virome <- tibble::as_tibble(virome)
 
     # Check formatting
+      #viromeFormatCheck(virome = virome)
     tryCatch({
       viromeFormatCheck(virome = virome)
 
-      showModal(modelDialog(
+      showModal(modalDialog(
         title = "Processing...",
         "Retrieving run data. This should only take a moment.",
         easyClose = TRUE,
@@ -284,15 +286,18 @@ server <- function(input, output, session) {
       tax <- virome[1, "scientific_name"][[1]]
       tax <- strsplit(tax, " ")[[1]][1]
       runDF <- taxLookup(tax = tax, con = con)
+      runDF <- runDF %>%
+        dplyr::mutate(virus_positive = ifelse(run %in% virome$run, TRUE, FALSE))
       virome <- list(virome, runDF)
 
       viromeData(virome)
 
-      hideModal()
-
     }, error = function(e) {
-      showNotification("Error: Uploaded file does not have the correct format. Please see 'help' for more information.", type = "error")
+      showNotification("Error: There was an issue loading your virome. Check your file for formatting errors.", type = "error")
+    }, finally = {
+      removeModal()
     })
+
   })
 
 
@@ -487,15 +492,14 @@ server <- function(input, output, session) {
       palmPrevalence(virome = viromeData())
     })
 
-    output$sradist <- renderPlotly({
-      req(viromeData())
-
-    # plot the distribution of sra runs
-      virome <- viromeData()
-      data <- virome[[1]]
-      sotus <- data %>% select(sotu) %>% unique()
-      # TODO
-    })
+    # output$sradist <- renderPlotly({
+    #   req(viromeData())
+    #
+    # # plot the distribution of sra runs
+    #   virome <- viromeData()
+    #   data <- virome[[1]]
+    #   sotus <- data %>% select(sotu) %>% unique()
+    # })
 
   # TODO: Add plots for 4 distributions: sra runs, bioprojects, coverage, and genbank identity
 }

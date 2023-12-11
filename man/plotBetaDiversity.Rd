@@ -21,3 +21,8 @@ virome <- getVirome(tax = "Salidae", con = con)
 plotBetaDiversity(virome)
 
 }
+\references{
+Andersen, K. S., Kirkegaard, R. H., Karst, S. M. & Albertsen, M.
+ampvis2: an R package to analyse and visualise 16S rRNA amplicon data.
+299537 Preprint at https://doi.org/10.1101/299537 (2018).
+}

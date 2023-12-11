@@ -5,9 +5,12 @@
 #' Filtered Serratus SQL data with the member genus of the Tylenchoidea
 #' superfamily.
 #'
+#' @source https://serratus.io
+#'
 #' @format A list of data frames. The first has 611 rows and 20 columns.
 #' Each row represents a single palm_id, with the corresponding run in which it was identified, as well as the
 #' viral species to which is belongs (sOTU). Columns as follows:
+#'
 #' \describe{
 #'  \item{run}{SRA run accession number.}
 #'  \item{scientific_name}{Metadata annotation for the library source species.}
@@ -31,20 +34,24 @@
 #'  \item{node_coverage_norm}{Normalized coverage of the vOTU in this library.}
 #'  \item{tax_phylum}{Taxonomic phylum annotation for the GenBank aligned sequence}
 #'  }
+#'
 #' The second data frame has 408 rows and 5 columns. This is a table of all
 #' runs queried by Serratus annotated as being associated with the 'Tylenchoidea'
 #' superfamily. Columns as follows:
+#'
 #' \describe{
 #' \item{run}{SRA run accession number.}
 #' \item{scientific_name}{Metadata annotation for the library source species.}
 #' \item{tax_id}{NCBI taxonomy identifier for the library source species.}
 #' \item{spots}{Number of spots (reads) in the library.}
 #' \item{virus_positive}{Bool; whether a palm print was detected in this library.}
+#' }
 #'
 #' @references
 #' Edgar, R.C., Taylor, B., Lin, V. et al. Petabase-scale sequence alignment
 #' catalyses viral discovery. Nature 602, 142–147 (2022).
 #' https://doi.org/10.1038/s41586-021-04332-2
+#'
 #' @examples
 #' \dontrun {
 #' TylenchoideaVirome

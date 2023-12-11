@@ -32,7 +32,7 @@ Imports:
     ampvis2,
     ComplexHeatmap,
     circlize,
-    testthat
+    stats
 Remotes:
     github::ababaian/palmid,
     github::kasperskytte/ampvis2,

@@ -33,6 +33,11 @@
 #' getAlphaDiversity(TylenchoideaVirome, mode = c("shannon", "simpson",
 #'                   "richness", "evenness"))
 #'
+#' @references
+#' Xia, Y. & Sun, J. Bioinformatic and Statistical Analysis of Microbiome
+#' Data: From Raw Sequences to Advanced Modeling with QIIME 2 and R.
+#' (Springer Nature, 2023).
+#'
 #' @export
 getAlphaDiversity <- function(virome = NULL, mode = "shannon",
                               bioSample = NULL) {
@@ -378,6 +383,11 @@ plotAlphaDiversity <- function(virome, mode = "shannon") {
 #' virome <- getVirome(tax = "Salidae", con = con)
 #' plotBetaDiversity(virome)
 #'
+#' @references
+#' Andersen, K. S., Kirkegaard, R. H., Karst, S. M. & Albertsen, M.
+#' ampvis2: an R package to analyse and visualise 16S rRNA amplicon data.
+#' 299537 Preprint at https://doi.org/10.1101/299537 (2018).
+#'
 #' @export
 plotBetaDiversity <- function(virome = NULL) {
 
@@ -404,4 +414,3 @@ plotBetaDiversity <- function(virome = NULL) {
 }
 
 # [END]
-

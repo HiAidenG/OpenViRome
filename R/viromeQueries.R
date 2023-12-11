@@ -140,7 +140,7 @@ taxLookup <- function(tax = NULL, con = NULL) {
 #'
 #' @description Return a dataframe with the tax_phylum for each sOTU in otu.
 #'
-#' @param virus A character vector of sOTUs
+#' @param otu A character vector of sOTUs
 #' @param con A connection to the Serratus database
 #'
 #' @return A dataframe of taxonomic information for the specified virus
