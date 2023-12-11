@@ -55,7 +55,7 @@ Some of the other functions include:
 
 Additional information and functions are covered in the vignette.
 
-![](./inst/extdata/openViRome.png)
+![](./inst/extdata/openViRome_fixed.png)
 
 ## Contributions:
 All functions were authored by Aiden Hiller. Some of the functions depend on packages written by others, including:
