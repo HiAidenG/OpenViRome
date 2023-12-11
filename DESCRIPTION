@@ -1,6 +1,6 @@
 Package: OpenViRome
 Title: Viromics Analysis of Serratus Data
-Version: 0.0.1.0000
+Version: 0.0.2.0000
 Authors@R: 
     person("Aiden", "Hiller", , "aiden.hiller@mail.utoronto.ca", 
     role = c("aut", "cre"),
@@ -13,7 +13,7 @@ Description: OpenViRome is an R package designed to generate 'virome reports' of
              contrasting 'virus-first' approach. OpenViRome can take as input a 
              taxonomic group of interest, or a vector of SRA run ids that have 
              been queried by Serratus.
-License: use_mit_license()
+License: MIT + file LICENSE
 Encoding: UTF-8
 Imports: 
     dplyr,
@@ -42,3 +42,5 @@ RoxygenNote: 7.2.3
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+vigignetteBuilder: knitr
+

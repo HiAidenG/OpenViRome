@@ -7,9 +7,9 @@
 getVirusTaxonomy(otu = NULL, con = NULL)
 }
 \arguments{
-\item{con}{A connection to the Serratus database}
+\item{otu}{A character vector of sOTUs}
 
-\item{virus}{A character vector of sOTUs}
+\item{con}{A connection to the Serratus database}
 }
 \value{
 A dataframe of taxonomic information for the specified virus
