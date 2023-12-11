@@ -91,7 +91,6 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
 #'
 #' @description Return a list of all runs processed by Serratus that match
 #' tax. Used internally by getVirome.
-#  NOT EXPORTED
 
 #' @param tax A taxon defined in NCBI taxonomy. Must be type char.
 #' @param con A connection to the Serratus database
@@ -99,6 +98,12 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
 #' @return A dataframe of all runs processed by Serratus that match tax.
 #'
 #' @import dplyr
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' runs <- taxLookup(tax = "Meloidogyne", con = con)
+#'
+#' @export
 taxLookup <- function(tax = NULL, con = NULL) {
 
   if (is.null(con)) {

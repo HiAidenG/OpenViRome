@@ -11,7 +11,7 @@ library(bs4Dash)
 require(circlize)
 require(grDevices)
 require(fresh)
-
+require(OpenViRome)
 
 viromeTheme <- fresh::create_theme(
   bs4dash_status(
@@ -268,9 +268,7 @@ server <- function(input, output, session) {
     virome <- read.csv(input$uploadFile$datapath)
     virome <- tibble::as_tibble(virome)
 
-    tryCatch({
-      viromeFormatCheck(virome = virome)
-
+    if (viromeFormatCheck(virome = virome)) {
       showModal(modalDialog(
         title = "Processing...",
         "Retrieving run data. This should only take a moment.",
@@ -279,6 +277,7 @@ server <- function(input, output, session) {
       ))
 
       con <- palmid::SerratusConnect()
+
       # TODO: this doesn't work, but it's a temporary fix
       # Use first row as tax
       tax <- virome[1, "scientific_name"][[1]]
@@ -289,12 +288,9 @@ server <- function(input, output, session) {
       virome <- list(virome, runDF)
 
       viromeData(virome)
-
-    }, error = function(e) {
-      showNotification("Error: There was an issue loading your virome. Check your file for formatting errors.", type = "error")
-    }, finally = {
-      removeModal()
-    })
+    } else {
+      showNotification("Error: Your file is not in the correct format.", type = "error")
+    }
 
   })
 
