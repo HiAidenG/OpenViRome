@@ -1,11 +1,23 @@
 ---
-title: "OpenViRome Walkthrough"
+title: "OpenViRome_Walkthrough"
 author: "Aiden Hiller"
+output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{OpenViRome Walkthrough}
+  %\VignetteIndexEntry{OpenViRome_Walkthrough}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, warning=FALSE, message=FALSE}
+library(OpenViRome)
+```
 
 ## Basic Overview
 
@@ -45,7 +57,7 @@ relevance. However, this is not the only use case for OpenViRome.
 ================================================================================
 ## Part 1: Setup
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 library(OpenViRome)
 
 con <- palmid::SerratusConnect() # establish a connection to the Serratus SQL
@@ -129,10 +141,10 @@ plotAlphaDiversity(TylenchoideaVirome, mode = "shannon")
 We can also just calculate diversity metrics individually for the virome:
 ```{r}
 # Shannon diversity
-OpenViRome::getAlphaDiversity(TylenchoideaVirome, mode = "shannon")
+getAlphaDiversity(TylenchoideaVirome, mode = "shannon")
 
 # Simpson diversity
-OpenViRome::getAlphaDiversity(TylenchoideaVirome, mode = "simpson")
+getAlphaDiversity(TylenchoideaVirome, mode = "simpson")
 
 # Also supports 'evenness' and 'richness' with the mode argument, and individual
 # biosamples with the 'bioSample' argument.
@@ -161,6 +173,7 @@ Currently OpenViRome has two opinionated plots that prioritize high divergence,
 high coverage, and common SRA prevalence viruses.
 
 ```{r}
+require(ComplexHeatmap)
 # Clustered heatmap plotting viral phylum (of each sOTU) against SRA runs in
 # which they appear
 viroMap(TylenchoideaVirome, minCov=100) # the minCov argument filters out sOTUs
@@ -193,6 +206,5 @@ runs without requiring any code from the user.
 
 You can run the shiny app locally with the viromeDashboard function:
 ```{r}
-viromeDashboard()
+#viromeDashboard()
 ```
-
