@@ -1,3 +1,12 @@
+---
+title: "OpenViRome Walkthrough"
+author: "Aiden Hiller"
+vignette: >
+  %\VignetteIndexEntry{OpenViRome Walkthrough}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 ## Basic Overview
 
 OpenViRome is an R package designed to generate 'virome' style reports of Serratus
@@ -40,7 +49,7 @@ relevance. However, this is not the only use case for OpenViRome.
 library(OpenViRome)
 
 con <- palmid::SerratusConnect() # establish a connection to the Serratus SQL
-TylenchoideaVirome <- getVirome(tax="Tylenchoidea", con=con)
+#TylenchoideaVirome <- getVirome(tax="Tylenchoidea", con=con)
 
 # Note that you can also use the 'getVirome' function to query SRA runs, i.e.
 # getVirome(sra=c("SRR1234567", "SRR7654321"), con=con)
@@ -117,18 +126,17 @@ plotAlphaDiversity(TylenchoideaVirome, mode = "shannon")
 # the 'mode' argument
 ```
 
-We can also just calculate diversity metrics individually for each biosample:
+We can also just calculate diversity metrics individually for the virome:
 ```{r}
 # Shannon diversity
-getAlphaDiversity(TylenchoideaVirome, mode = "shannon", bioSample=c("SAMN08001176"))
+OpenViRome::getAlphaDiversity(TylenchoideaVirome, mode = "shannon")
 
 # Simpson diversity
-getAlphaDiversity(TylenchoideaVirome, mode = "simpson", bioSample=c("SAMN08001176"))
+OpenViRome::getAlphaDiversity(TylenchoideaVirome, mode = "simpson")
 
-# Also supports 'evenness' and 'richness' with the mode argument
+# Also supports 'evenness' and 'richness' with the mode argument, and individual
+# biosamples with the 'bioSample' argument.
 
-# Or for the whole virome
-getAlphaDiversity(TylenchoideaVirome, mode = "shannon")
 ```
 
 Finally, OpenViRome provides support for transforming a virome object to an
