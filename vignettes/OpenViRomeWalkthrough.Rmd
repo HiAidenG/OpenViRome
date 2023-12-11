@@ -1,10 +1,21 @@
+---
+title: "OpenViRome Walkthrough"
+author: "Aiden Hiller"
+vignette: >
+  %\VignetteIndexEntry{OpenViRome Walkthrough}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 ## Basic Overview
 
 OpenViRome is an R package designed to generate 'virome' style reports of Serratus
 data given a taxonomic group of interest. The package's primary goal is to
-provide exploratory data visualizations of viral diversity for the purpose of
-identifying novel viruses of high priority. Visulizations within the package
-can broadly be grouped into two categories: 
+provide easy access to Serratus data in a meaningful framework for the purpose of
+virus discovery. OpenViRome aims to take as input any arbitrary grouping of SRA data
+(runs, taxonomic groups, etc.) and provide a number of visualizations that can
+be used to identify novel viruses within that data of high priority. Visulizations
+within the package can broadly be grouped into two categories:
 1. Objective Plots. Such plots are not likely to be easily interpretable as 
 metagenomic data is innately noisy, but rather they plainly lay out the data 
 without bias. These plots are meant to answer:
@@ -12,220 +23,176 @@ without bias. These plots are meant to answer:
  - How are the viruses distributed across species within the taxon?
  - How is viral diversity different between samples?
  
-2. Opinionated Plots. These plots are meant to elucidate more of a story of
+2. Opinionated Plots. These plots are meant to elucidate more of a narrative of
 which viruses are high priority for characterization, based on features I have
-deemed to be important. 
+deemed to be important (e.g. high coverage and low GenBank identity).
 
+The focus of OpenViRome is to generate meaningful and interpretable plots of viral
+diversity for streamlined analysis, not the generation of new data. It is meant
+to be used in tandem with palmid, which provides a contrasting 'virus-first'
+approach.
 
+For this walkthrough, we will be focusing on characterizing the virome of the
+parasitic nematode superfamily, Tylenchoidea. This group includes the genera
+Globodera, Heterodera, and Meloidogyne, which parasitize a wide range of 
+agricultural crops and are responsible for billions of dollars in crop loss
+annually.
 
-
-Its primary focus is on generating
-meaningful and interpretable plots of viral diversity for streamlined analysis,
-not the generation of new data. It is meant to be used in tandem with palmid,
-which provides a contrasting 'virus-first' approach. 
-
-For this walkthrough, we will be focusing on characterizing the parasitic
-nematode superfamily Tylenchoidea virome.  
-
-The ultimate goal of the two packages is to create a framework for prioritizing
-novel viruses relevant to human health and agriculture. 
+In this instance, we are interested in understanding Tylenchoidea viral diversity
+with the goal of identifying potential biocontrol agents due to the high agricultural
+relevance. However, this is not the only use case for OpenViRome.
 
 ================================================================================
-## Step 1: Setup
+## Part 1: Setup
 
 ```{r}
 library(OpenViRome)
 
 con <- palmid::SerratusConnect() # establish a connection to the Serratus SQL
-test <- getVirome(tax="Musa", con=con, abundance=TRUE)
+#TylenchoideaVirome <- getVirome(tax="Tylenchoidea", con=con)
 
+# Note that you can also use the 'getVirome' function to query SRA runs, i.e.
+# getVirome(sra=c("SRR1234567", "SRR7654321"), con=con)
 ```
-
-
-================================================================================
-## Objective Plots
-
-### Plot 1: Viral Diversity (family abundance)
-```{r}
-p <- plotVirome(test)
-p
-
-```
-
-### Plot 2: Host-Viral Burden (Incidence of vRNA+ samples)
-```{r}
-
-p <- incidencePlot(test, con=con)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Step 1:
-OpenViRome analysis begins by choosing a taxonomic group of interest.
-Alternatively, one can also query a specific SRA run or set of runs (provided
-the data is available on Serratus). For this walkthrough, we will use nematode
-superfamily Tylenchoidea, whose members include plant parastic nematodes that
-are responsible for destructive crop loss. 
-
-```{r}
-library(OpenViRome)
-
-con <- palmid::SerratusConnect() # establish a connection to the SQL server
-```
-
-```{r}
-# Query the Serratus SQL for Tylenchoidea
-TylenchoideaVirome <- getVirome(tax = "Tylenchoidea", con = con)
-
-# Alternatively, you can query with a set of runs
-virome <- getVirome(sra = c("SRR17756040", "SRR5942326"), con = con)
-```
-
-Note that querying Serratus can take a while, and is dependent on the size of 
-the specified taxon. 
-For this tutorial, we can also load the included Tylenchoidea virome object
+This cell may take a while to run, as it is querying the Serratus SQL for all
+Tylenchoidea data. Larger taxonomic groups will take longer to query. 
+Alternatively, you can load the included Tylenchoidea virome object.
 
 ```{r}
 data("TylenchoideaVirome")
-head(TylenchoideaVirome)
 ```
 
-## Step 2: 
-Now that we have the data, we'd like to start exploring it. At a very high
-level, we can get a sense for what families of virus are present by plotting
-a pie chart.
 
+## Part 2: Objective Plots
+Currently, the objective plots provided are:
+ - Phylum abundance (piechart)
+ - Sankey diagram of sOTUs across bioprojects
+ - Barchart of virus-positive runs for each source species
+ - Alpha diversity metrics for each biosample
+ - Support for beta diversity (ordination) using the ampvis2 package.
+ 
+ 
 ```{r}
-p <- plotVirome(TylenchoideaVirome)
-p
+# Overview stats
+getViromeSummary(TylenchoideaVirome)
+```
+ 
+```{r}
+# Phylum abundance
+plotViromePie(TylenchoideaVirome)
 ```
 
-The largest slice is 'null' meaning we were unable to identify a virus family
-for that sOTU. This means either 1) the virus is so highly diverged we were
-unable to find any significant alignments in GenBank, or 2) the virus we
-aligned to is not annotated as belonging to a family. 
-
-In this case, this plot raises more questions than it answers. For instance:
-- What are the viruses in the 'null' category?
-- Why are there so many viral families for a relatively small host range? How
-  many of these viruses could be 'true' infections vs. contamination?
-- What is the distribution of viruses across the different host species?
-
-To make sense of this, we'll have to dig a little deeper.
-
-## Step 3:
-Plot distribution of virus families.
-As a sanity check, we can make sure none of our potential hosts have some sort
-of omnipresent contaminant.
-```{r}
-# This requires connecting to Serratus again to query a separate SQL table,
-# it could take some time.
-incidencePlot(TylenchoideaVirome, con)
-```
-Now we can look at the distribution of viruses across the different source 
-species.
-```{r}
-perSpeciesHeatmap(TylenchoideaVirome)
-```
-This plot is purely looking at the quantity of vOTUs (palmids) that aligned
-to a given family for each source species. It does not take into account
-any kind of viral expression, nor should the palmids be interpreted as unique
-viral species. We can still see a large density of an uncharacterized virus
-(or viruses) in genus Globodera, Heterodera, and Meloidogyne (top row). Is this
-a single viral species that infects all three genera? But while we're here,
-we can also compute a number of alpha-diversity metrics for each source species:
+Here we'll get a warning that there are too many phyla to be discernible
+by color. So we can instead plot a subset:
 
 ```{r}
-# Compute Shannon diversity for whole virome
-print(paste0("Shannon diversity: ", getShannonDiversity(TylenchoideaVirome)))
-
-# Or for an individual source species
-print(paste0("Globodera rostochiensis Shannon diversity: ", 
-             getShannonDiversity(TylenchoideaVirome,
-                                 sourceSpecies = "Globodera rostochiensis")))
-
-# And some other alpha diversity metrics
-print(paste0("Simpson diversity: ", getSimpsonDiversity(TylenchoideaVirome)))
-print(paste0("Heterodera glycines richness: ", 
-             getSpeciesRichness(TylenchoideaVirome, 
-                                sourceSpecies = "Heterodera glycines")))
+plotViromePie(TylenchoideaVirome, phylumFilter=c("Negarnaviricota", 
+                                                  "Lenarviricota"))
+# Note that slices are now proportional to the filtered phyla, not the total.
 ```
 
-## Step 4: Incorporate Coverage
-Coverage is the number of reads aligning to that sOTU for a given sequencing
-library. It is a proxy for viral abundance, which itself can be used to inform
-whether a particular virus might be a true infection or a contaminant. However,
-caution should be noted as to not over-interpret coverage. It is merely a metric
-for prioritizing novel viruses of potential interest. 
-
-OpenViRome provides two plots for visualizing coverage, and they provide
-slightly different information. The first is a simple heatmap, which plots
-the coverage of each sOTU across all source species. 
-
+We can also customize the colors:
 ```{r}
-viroMap(TylenchoideaVirome, minCov = 30)
-#minCov can be adjusted to filter based on sOTU coverage.
+plotViromePie(TylenchoideaVirome, phylumFilter=c("Negarnaviricota", 
+                                                  "Lenarviricota"),
+               colors=c("red", "blue"))
 ```
-The second plot is a scatterplot, that also incorporates the number of 
-BioProjects (essentially, independent studies) and the number of runs that the
-sOTU was found in. Generally, a virus that appears in multiple BioProjects
-is less likely to be a contaminant. 
+
+And do the same for the sankey plot:
+```{r}
+drawVirusSankey(TylenchoideaVirome, phylumFilter=c("Negarnaviricota", 
+                                                  "Lenarviricota"),
+               colors=c("red", "blue"))
+```
+
+We can also plot the virus-positive runs for each source species. This might
+give us a sense of whether a species might have a chronic/endogenous infection,
+in addition to what kind of data is available for this taxon in the SRA.
+```{r}
+# First have to calculate 'host burden'
+vbDF <- getHostViralBurden(TylenchoideaVirome)
+# Then plot
+plotVirusPositive(vbDF)
+```
+
+OpenViRome also supports plotting alpha and beta diversity of the virome. Here,
+I treat each biosample as a 'community' and normalized read count as the number
+of observations for each sOTU.
+```{r}
+# Alpha diversity
+plotAlphaDiversity(TylenchoideaVirome, mode = "shannon")
+
+# shannon diversity is plotted by default, but you can also plot simpson with 
+# the 'mode' argument
+```
+
+We can also just calculate diversity metrics individually for the virome:
+```{r}
+# Shannon diversity
+OpenViRome::getAlphaDiversity(TylenchoideaVirome, mode = "shannon")
+
+# Simpson diversity
+OpenViRome::getAlphaDiversity(TylenchoideaVirome, mode = "simpson")
+
+# Also supports 'evenness' and 'richness' with the mode argument, and individual
+# biosamples with the 'bioSample' argument.
+
+```
+
+Finally, OpenViRome provides support for transforming a virome object to an
+ampvis2 object. Read counts are already normalized based on SRA run total reads.
+```{r}
+d <- viromeToOTUTable(TylenchoideaVirome)
+m <- viromeToMetadataTable(TylenchoideaVirome) # metadata is optional
+
+ampvis2::amp_load(otutable = d, metadata = m)
+```
 
 ```{r}
+# Can also just plot bray-curtis distance from within OpenViRome
+plotBetaDiversity(TylenchoideaVirome)
+```
+This plot uses PCoA with bray-curtis and no transformation. For more options,
+see the ampvis2 package [documentation](https://kasperskytte.github.io/ampvis2/articles/ampvis2.html)
+
+## Part 3: Opinionated Plots
+
+Currently OpenViRome has two opinionated plots that prioritize high divergence,
+high coverage, and common SRA prevalence viruses.
+
+```{r}
+# Clustered heatmap plotting viral phylum (of each sOTU) against SRA runs in
+# which they appear
+viroMap(TylenchoideaVirome, minCov=100) # the minCov argument filters out sOTUs
+# with cov < minCov. Often the plot will be too large to be useful without this
+# filter due to the high number of low coverage sOTUs.
+
+# Unfortunately, this plot does not display properly in a knitted markdown or in
+# the Rstudio viewer. It is best viewed in its own window.
+```
+
+```{r}
+# And the scatterplot:
+
 palmPrevalence(TylenchoideaVirome)
-```
-Bubbles are sized by coverage, and colored by GenBank identity. We can see there
-is a high density of viruses appearing in few runs and few BioProjects, although
-some of them have high coverage. Investigating these further would require
-palmid analyses. In the meanwhile, we can see u507489 immediately stands out as
-a high coverage virus that appears in many runs and BioProjects, with a low
-genbank identity. Let's pull that virus:
 
+# Here each sOTU is represented as a point, with the x-axis being the number of
+# SRA runs in which it appears, and the y-axis being the number of bio_samples.
+# The size of the point is proportional to the mean number of normalized reads
+# for that sOTU across all runs within the virome within which it appears.
+
+# The color of each point is determined the sOTUs divergence from the closest
+# alignment in GenBank.
+```
+
+## Part 4: Shiny App
+
+OpenViRome was mostly developed to provide a backend for the Shiny interface,
+which provides virome summary reports for any taxonomic group or set of SRA 
+runs without requiring any code from the user. 
+
+You can run the shiny app locally with the viromeDashboard function:
 ```{r}
-TylenchoideaVirome[TylenchoideaVirome$sotu == "u507489",]
+viromeDashboard()
 ```
-
-A quick GenBank search reveals the closest known relative to this virus is in the
-family Orthomyxoviridae (same family as influenza), and originated from a bumble 
-bee. At this percent identity, though, it's hard to say what the true host for 
-this virus might be. Although, given that it independently appears in multiple 
-BioProjects labelled with several different Globodera species, it's possible this 
-could be a worm flu! 
-
-```{r}
-# Plot Beta-diversity with PCA using ampvis2 package
-con <- palmid::SerratusConnect()
-counts <- getAmpvisCounts(TylenchoideaVirome, con)
-
-
-data <- ampvis2::amp_load(otutable = counts[[1]], 
-                          metadata = counts[[2]])
-
-p <- ampvis2::amp_ordinate(data, filter_species=0.0, type="pca",
-                           distmeasure="bray", 
-                           transform = "none",
-                           sample_color_by="scientific_name")
-p
-
-
-```
-
 

@@ -1,0 +1,8 @@
+bibentry(
+  bibtype  = "Software",
+  title    = "OpenViRome",
+  author   = "Aiden Hiller",
+  year     = "2023",
+  url      = "https://github.com/HiAidenG/OpenViRome/",
+  journal  = "unpublished"
+)

@@ -41,3 +41,8 @@ getAlphaDiversity(TylenchoideaVirome, mode = c("shannon", "simpson",
                   "richness", "evenness"))
 
 }
+\references{
+Xia, Y. & Sun, J. Bioinformatic and Statistical Analysis of Microbiome
+Data: From Raw Sequences to Advanced Modeling with QIIME 2 and R.
+(Springer Nature, 2023).
+}
