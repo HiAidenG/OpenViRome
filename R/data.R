@@ -53,8 +53,8 @@
 #' https://doi.org/10.1038/s41586-021-04332-2
 #'
 #' @examples
-#' \dontrun {
-#' TylenchoideaVirome
+#' \dontrun{
+#'  TylenchoideaVirome
 #' }
 #'
 "TylenchoideaVirome"

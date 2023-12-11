@@ -56,8 +56,8 @@ Filtered Serratus SQL data with the member genus of the Tylenchoidea
 superfamily.
 }
 \examples{
-\dontrun {
-TylenchoideaVirome
+\dontrun{
+ TylenchoideaVirome
 }
 
 }
