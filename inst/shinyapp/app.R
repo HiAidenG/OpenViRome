@@ -288,6 +288,8 @@ server <- function(input, output, session) {
       virome <- list(virome, runDF)
 
       viromeData(virome)
+
+      removeModal()
     } else {
       showNotification("Error: Your file is not in the correct format.", type = "error")
     }
