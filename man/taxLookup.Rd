@@ -18,3 +18,8 @@ A dataframe of all runs processed by Serratus that match tax.
 Return a list of all runs processed by Serratus that match
 tax. Used internally by getVirome.
 }
+\examples{
+con <- palmid::SerratusConnect()
+runs <- taxLookup(tax = "Meloidogyne", con = con)
+
+}
