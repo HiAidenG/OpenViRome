@@ -9,14 +9,11 @@ getVirusTaxonomy(otu = NULL, con = NULL)
 \arguments{
 \item{con}{A connection to the Serratus database}
 
-\item{virus}{A character vector of virus names}
-
-\item{rank}{A character vector of taxonomic ranks}
+\item{virus}{A character vector of sOTUs}
 }
 \value{
-A character vector of taxons
+A dataframe of taxonomic information for the specified virus
 }
 \description{
-Return the taxonomic information at a specified rank for
-a given virus.
+Return a dataframe with the tax_phylum for each sOTU in otu.
 }

@@ -7,19 +7,9 @@
 #' @examples
 #' viromeDashboard()
 #'
-#' @import shiny
-#' @import shinydashboard
-#' @import palmid
-#' @import plotly
-#' @import dplyr
-#' @import RColorBrewer
-#' @import tidyr
-#' @import ggplot2
-#' @import bs4Dash
-#' @import circlize
-#' @import grDevices
-#' @import fresh
-#' @import ComplexHeatmap
+#' @import shiny shinydashboard palmid plotly dplyr
+#' @import RColorBrewer tidyr ggplot2 bs4Dash circlize 
+#' @import grDevices fresh ComplexHeatmap
 #'
 #' @export
 viromeDashboard <- function() {

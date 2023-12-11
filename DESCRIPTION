@@ -31,7 +31,8 @@ Imports:
     palmid,
     ampvis2,
     ComplexHeatmap,
-    circlize
+    circlize,
+    testthat
 Remotes:
     github::ababaian/palmid,
     github::kasperskytte/ampvis2,

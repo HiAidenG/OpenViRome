@@ -12,7 +12,7 @@ taxLookup(tax = NULL, con = NULL)
 \item{con}{A connection to the Serratus database}
 }
 \value{
-A character vector of SRA accessions.
+A dataframe of all runs processed by Serratus that match tax.
 }
 \description{
 Return a list of all runs processed by Serratus that match

@@ -36,60 +36,55 @@
 #' @export
 getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
   if (is.null(con)) {
-    stop("Please provide a connection to the Serratus database
-         (see palmid::SerratusConnect)")
+    stop("Please provide a connection to the Serratus database (see palmid::SerratusConnect)")
   }
   if (is.null(tax) & is.null(sra)) {
-    stop("Must provide either a taxonomic term or a character vector of
-         SRA accessions")
+    stop("Must provide either a taxonomic term or a character vector of SRA accessions")
   }
   if (!is.null(tax) & !is.null(sra)) {
-    stop("Must provide either a taxonomic term or a character vector of
-         SRA accessions")
+    stop("Must provide either a taxonomic term or a character vector of SRA accessions")
   }
-  if (!is.null(tax) & is.null(sra)) {
+
+  if (!is.null(tax)) {
     runDF <- taxLookup(tax, con)
-
-    # Check there wasn't an error
-    if (is.null(runDF)) {
-      stop("Error: could not find taxonomic term in NCBI taxonomy database")
-    }
-
-    runDF <- taxLookup(tax = tax, con = con)
-    runDF <- data.frame(runDF)
-    runs <- runDF %>% dplyr::pull(run)
-    virome <- tbl(con, "palm_virome") %>%
-      dplyr::filter(run %in% runs) %>%
+  } else {
+    runDF <- tbl(con, "srarun") %>%
+      dplyr::filter(run %in% sra) %>%
       dplyr::collect()
-
-    # Mutate runDF to include a column for whether that run was virus positive
-    runDF <- runDF %>%
-      dplyr::mutate(virus_positive = ifelse(run %in% virome$run, TRUE, FALSE))
-
-    # Add normalized coverage
-    virome <- virome %>%
-      dplyr::left_join(runDF %>% dplyr::select(run, spots), by = 'run') %>%
-      dplyr::mutate(node_coverage_norm = (node_coverage / spots) * 1e8) %>%
-      dplyr::select(-spots)
-
-    # Add taxonomic information
-    virusSpecies <- virome %>% select(sotu) %>% unique() %>% pull(sotu)
-    phyla <- getVirusTaxonomy(otu = virusSpecies, con = con)
-
-    # Join the taxonomic information to the virome
-    virome <- virome %>% dplyr::left_join(phyla, by = 'sotu',
-                                          relationship = "many-to-many")
-
-    # Rename NA to "Unclassified"
-    virome <- virome %>% dplyr::mutate(tax_phylum = ifelse(is.na(tax_phylum),
-                                                       "Unclassified",
-                                                       tax_phylum))
   }
 
+  # Check there wasn't an error
+  if (is.null(runDF)) {
+    stop("Error: could not find taxonomic term in NCBI taxonomy database")
+  }
+
+  runDF <- data.frame(runDF)
+  runs <- runDF %>% dplyr::pull(run)
+  virome <- tbl(con, "palm_virome") %>%
+    dplyr::filter(run %in% runs) %>%
+    dplyr::collect()
+
+  # Mutate runDF to include a column for whether that run was virus positive
+  runDF <- runDF %>%
+    dplyr::mutate(virus_positive = ifelse(run %in% virome$run, TRUE, FALSE))
+
+  # Normalize coverage
+  virome <- virome %>%
+    dplyr::left_join(runDF %>% dplyr::select(run, spots), by = 'run') %>%
+    dplyr::mutate(node_coverage_norm = (node_coverage / spots) * 1e8) %>%
+    dplyr::select(-spots)
+
+  # Get taxonomic information
+  virusSpecies <- virome %>% select(sotu) %>% unique() %>% pull(sotu)
+  phyla <- getVirusTaxonomy(otu = virusSpecies, con = con)
+
+  # Join the taxonomic information to the virome
+  virome <- virome %>% dplyr::left_join(phyla, by = 'sotu', relationship = "many-to-many")
+
+  # Rename NA to "Unclassified"
+  virome <- virome %>% dplyr::mutate(tax_phylum = ifelse(is.na(tax_phylum), "Unclassified", tax_phylum))
 
   return(list(virome, runDF))
-  # TODO: add support for sra accession input
-
 }
 
 #' @title taxLookup
@@ -101,7 +96,7 @@ getVirome <- function(tax = NULL, sra = NULL, con = NULL) {
 #' @param tax A taxon defined in NCBI taxonomy. Must be type char.
 #' @param con A connection to the Serratus database
 #'
-#' @return A character vector of SRA accessions.
+#' @return A dataframe of all runs processed by Serratus that match tax.
 #'
 #' @import dplyr
 taxLookup <- function(tax = NULL, con = NULL) {
@@ -143,14 +138,12 @@ taxLookup <- function(tax = NULL, con = NULL) {
 
 #' @title getVirusTaxonomy
 #'
-#' @description Return the taxonomic information at a specified rank for
-#' a given virus.
+#' @description Return a dataframe with the tax_phylum for each sOTU in otu.
 #'
-#' @param virus A character vector of virus names
-#' @param rank A character vector of taxonomic ranks
+#' @param virus A character vector of sOTUs
 #' @param con A connection to the Serratus database
 #'
-#' @return A character vector of taxons
+#' @return A dataframe of taxonomic information for the specified virus
 #'
 #' @import dplyr
 #'

@@ -48,11 +48,11 @@ ui <- bs4DashPage(
         tabName = "ViromeDiversity",
         icon = icon("chart-bar")
       ),
-      menuItem(
-        text = "Source-sOTU Heatmap",
-        tabName = "sOTUHeatmap",
-        icon = icon("vial-virus")
-      ),
+      # menuItem(
+      #   text = "Source-sOTU Heatmap",
+      #   tabName = "sOTUHeatmap",
+      #   icon = icon("vial-virus")
+      # ),
       menuItem(
         text = "SRA Prevalence",
         tabName = "sOTUScatter",
@@ -246,7 +246,7 @@ server <- function(input, output, session) {
       tryCatch({
         virome <- getVirome(sra = input$accessions, con = con)
       }, error = function(e) {
-        showNotification("Error: There was an issue loading your virome. Are you sure your accessions are comma-separated?=", type = "error")
+        showNotification("Error: There was an issue loading your virome. Are you sure your accessions are comma-separated?", type = "error")
         errorOccurred <<- TRUE
       }, finally = {
         removeModal()

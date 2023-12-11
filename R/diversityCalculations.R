@@ -44,11 +44,11 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
   if (!is.null(bioSample)) {
 
     # Check that the BioSample is valid
-    if (!bioSample %in% virome$BioSample) {
+    if (!bioSample %in% virome[[1]]$bio_sample) {
       stop("Error: BioSample not found in virome object")
     }
 
-    virome <- virome %>%
+    virome[[1]] <- virome[[1]] %>%
       filter(bio_sample == bioSample)
 
   }
@@ -65,25 +65,25 @@ getAlphaDiversity <- function(virome = NULL, mode = "shannon",
   }
 
 
-  returnTable <- tibble(bio_sample = unique(virome$bio_sample))
+  returnTable <- tibble(bio_sample = unique(virome[[1]]$bio_sample))
   for (i in 1:length(mode)) {
     if (mode[i] == "shannon") {
       returnTable <- returnTable %>%
-        full_join(getDiversity(virome, mode="shannon"),
+        left_join(getDiversity(virome, mode="shannon"),
                   by = "bio_sample")
     }
     else if (mode[i] == "simpson") {
       returnTable <- returnTable %>%
-        full_join(getDiversity(virome, mode="simpson"),
+        left_join(getDiversity(virome, mode="simpson"),
                   by = "bio_sample")
     }
     else if (mode[i] == "richness") {
       returnTable <- returnTable %>%
-        full_join(getRichness(virome), by = "bio_sample")
+        left_join(getRichness(virome), by = "bio_sample")
     }
     else if (mode[i] == "evenness") {
       returnTable <- returnTable %>%
-        full_join(getEvenness(virome), by = "bio_sample")
+        left_join(getEvenness(virome), by = "bio_sample")
     }
   }
 
@@ -189,8 +189,6 @@ getDiversity <- function(virome, mode = "shannon") {
 #' column for evenness.
 #'
 #' @import dplyr
-#'
-#' @export
 getEvenness <- function(virome) {
 
 
@@ -289,7 +287,6 @@ viromeToMetadataTable <- function(virome = NULL) {
 }
 
 
-# TODO: This needs to be fixed, breaks when plotting many genera.
 #' @title plotAlphaDiversity
 #'
 #' @description Automatically plots Simpson, Shannon, and Pielou evenness for
@@ -337,27 +334,29 @@ plotAlphaDiversity <- function(virome, mode = "shannon") {
 
   # Plot
     if (mode == "shannon") {
-        p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~shannon,
-                      color = ~color, type = "box",
-                      boxpoints = "all", jitter = 0.3, pointpos = 0.0,
-                      line = list(width = 0),
-                      fillcolor = "rgba(0,0,0,0)",
-                      name = mode,
-                      text = ~hover_info,  # Add hover text
-                      hoverinfo = "text+y") %>%
-            layout(yaxis = list(title = "Shannon Diversity"),
-                   xaxis = list(title = "Source Species"))
+      p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~shannon,
+              color = ~color, type = "box",
+              boxpoints = "all", jitter = 0.3, pointpos = 0.0,
+              line = list(width = 0),
+              fillcolor = "rgba(0,0,0,0)",
+              name = mode,
+              text = ~hover_info,  # Add hover text
+              hoverinfo = "text+y") %>%
+        layout(yaxis = list(title = "Shannon Diversity"),
+             xaxis = list(title = "Source Species"),
+             showlegend = FALSE)  # Remove legend
     } else if (mode == "simpson") {
-        p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~simpson,
-                      color = ~color, type = "box",
-                      boxpoints = "all", jitter = 0.3, pointpos = 0.0,
-                      line = list(width = 0),
-                      fillcolor = "rgba(0,0,0,0)",
-                      name = mode,
-                      text = ~hover_info,  # Add hover text
-                      hoverinfo = "text+y") %>%
-            layout(yaxis = list(title = "Simpson Diversity"),
-                   xaxis = list(title = "Source Species"))
+      p1 <- plot_ly(alphaDiversity, x = ~scientific_name, y = ~simpson,
+              color = ~color, type = "box",
+              boxpoints = "all", jitter = 0.3, pointpos = 0.0,
+              line = list(width = 0),
+              fillcolor = "rgba(0,0,0,0)",
+              name = mode,
+              text = ~hover_info,
+              hoverinfo = "text+y") %>%
+        layout(yaxis = list(title = "Simpson Diversity"),
+             xaxis = list(title = "Source Species"),
+             showlegend = FALSE)
     }
 
     return(p1)
@@ -405,3 +404,4 @@ plotBetaDiversity <- function(virome = NULL) {
 }
 
 # [END]
+

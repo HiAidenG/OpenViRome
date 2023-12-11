@@ -5,16 +5,24 @@
 #' @description Plot a heatmap for the virome. Each column is a sample
 #' and each row is an sOTU. The intensity of color for each cell is proportional
 #' to the log of the node_coverage value for that sOTU in that sample. Samples
-#' are grouped by source species. sOTUs are grouped by family.
+#' are grouped by source species. sOTUs are grouped by family. Note: the heatmap
+#' might not display properly in the RStudio viewer and should be viewed in a
+#' separate window.
 #'
 #' @param virome A tbl_df containing the virome data.
 #' @param minCov The minimum coverage value to include in the heatmap.
 #'
+#' @import ComplexHeatmap
 #' @importFrom dplyr group_by summarize filter distinct select
-#' @importFrom ComplexHeatmap Heatmap
 #' @importFrom circlize colorRamp2
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom plotly plot_ly layout
+#'
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome(tax = "Meloidogyne", con = con)
+#' viroMap(virome = virome)
 #'
 #' @export
 viroMap <- function(virome = NULL, minCov = 0) {
