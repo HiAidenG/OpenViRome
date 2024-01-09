@@ -90,4 +90,47 @@ palmPrevalence <- function(virome) {
   return(plot)
 }
 
+#' @title palmPrevalenceKernels
+#'
+#' @description For each of the four distributions present in the palmPrevalence
+#' plot (SRA runs, bio_projects, mean coverage, and genbank identity), plot the
+#' kernel density estimate.
+#'
+#' @param virome A virome object
+#'
+#' @return A plotly plot
+#'
+#' @examples
+#' con <- palmid::SerratusConnect()
+#' virome <- getVirome("Meloidogyne", con = con)
+#' palmPrevalenceKernels(virome)
+#'
+#' @import dplyr ggplot2
+#'
+#' @export
+palmPrevalenceKernels <- function(virome) {
+  virome <- virome[[1]]
+
+  runs <- virome %>% select(sotu, run) %>% group_by(sotu) %>% summarise(runs = n_distinct(run))
+  bio_projects <- virome %>% select(sotu, bio_project) %>% group_by(sotu) %>% summarise(bio_projects = n_distinct(bio_project))
+  mean_coverage <- virome %>% select(sotu, node_coverage_norm) %>% group_by(sotu) %>% summarise(mean_coverage = mean(node_coverage_norm))
+  gb_pid <- virome %>% select(sotu, gb_pid) %>% group_by(sotu) %>% summarise(gb_pid = gb_pid[1])
+
+  sotuTable <- runs %>% left_join(bio_projects, by = 'sotu') %>% left_join(mean_coverage, by = 'sotu') %>% left_join(gb_pid, by = 'sotu')
+
+  # Plot each variable on a separate facet
+  plot <- sotuTable %>%
+    gather(variable, value, -sotu) %>%
+    ggplot(aes(x = value)) +
+    geom_density() +
+    geom_rug() +
+    facet_wrap(~variable, scales = 'free') +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(x = NULL, y = NULL, title = 'Kernel Density Estimates for sOTU Prevalence Variables')
+
+  return(plot)
+}
+
+
 # [END]

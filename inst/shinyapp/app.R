@@ -88,65 +88,65 @@ ui <- bs4DashPage(
                                  placeholder = "SRA Accessions (comma separated)",
                                  width = '50%'),
                        actionButton("submitQuery", "Submit", style = "width: 50%;")
-                       ),
+          ),
           bs4Dash::box(title = "Upload Virome",
-                                p("Upload a formatted virome file in CSV format."),
-                                p("See the 'help' tab for more information."),
-                                p("Example .csv provided at OpenViRome/inst/extdata/Meloidogyne_virome.csv"),
-                                closable = FALSE,
-                                collapsible = FALSE,
-                                width = 6,
-                                solidHeader = FALSE,
-                                status = "primary",
-                                fileInput("uploadFile", label = NULL,
-                                          placeholder = "Upload Virome",
-                                          width = '50%'),
-                                actionButton("submitFile", "Submit", style = "width: 50%;")
-                   )
-         ), # Row 2 close
+                       p("Upload a formatted virome file in CSV format."),
+                       p("See the 'help' tab for more information."),
+                       p("Example .csv provided at OpenViRome/inst/extdata/Meloidogyne_virome.csv"),
+                       closable = FALSE,
+                       collapsible = FALSE,
+                       width = 6,
+                       solidHeader = FALSE,
+                       status = "primary",
+                       fileInput("uploadFile", label = NULL,
+                                 placeholder = "Upload Virome",
+                                 width = '50%'),
+                       actionButton("submitFile", "Submit", style = "width: 50%;")
+          )
+        ), # Row 2 close
         fluidRow(
           column(width = 12,
                  # Display loading animation
                  uiOutput("statsCard")
-            )
-        ), # Row 3 close
-      fluidRow(
-        bs4Dash::bs4Card(
-        title = "Help",
-        width = 12,
-        tabPanel(
-          p("This tool is currently still in beta. Please report any bugs or issues to the openVirome GitHub page."),
-          h4("How to use openViRome"),
-          p("openViRome is designed to be able to provide a 'virome-style' analysis for any arbitrary set of SRA data. As of v0.02, openViRome can be used in three ways:"),
-          p("1. Query Serratus by taxon. This will construct a virome from all SRA data processed by Serratus that are annotated as belonging to the taxon specified. This approach has limitations, notably in that SRA metadata annotations are not particularly reliable. Please also note that this relies on the NCBI taxonomy, so taxonomic names must be NCBI-recognized. If you are unsure, check the ", a("NCBI Taxonomy Browser", href = "https://www.ncbi.nlm.nih.gov/taxonomy"), "."),
-          p("2. Query Serratus by SRA accession. The virome will consist of all SRA accessions provided in your comma-separated list if and only if they have been processed by Serratus. At the time of writing (December 8th, 2023) Serratus v2 has processed X runs (xx%)."),
-          p("3. Upload a virome file. This file should be a .csv with the following columns:"),
-          p("    - run: SRA accession"),
-          p("    - scientific_name: source organism taxonomic name"),
-          p("    - bio_sample: SRA biosample accession"),
-          p("    - sotu: source-sOTU ID"),
-          p("    - gb_acc: genbank accession of closest alignemnt."),
-          p("    - gb_pid: percent identity of closest alignment."),
-          p("    - tax_species: species name of closest alignment."),
-          p("    - tax_phylum: phylum name of closest alignment."),
-          p("    - node_coverage_norm: read coverage for sOTU normalized by library size."),
-          p("For more information about Serratus, see the ", a("wiki", href = "https://github.com/ababaian/serratus/wiki"), ".")
           )
-        )
-      ) # Row 4 close
+        ), # Row 3 close
+        fluidRow(
+          bs4Dash::bs4Card(
+            title = "Help",
+            width = 12,
+            tabPanel(
+              p("This tool is currently still in beta. Please report any bugs or issues to the openVirome GitHub page."),
+              h4("How to use openViRome"),
+              p("openViRome is designed to be able to provide a 'virome-style' analysis for any arbitrary set of SRA data. As of v0.02, openViRome can be used in three ways:"),
+              p("1. Query Serratus by taxon. This will construct a virome from all SRA data processed by Serratus that are annotated as belonging to the taxon specified. This approach has limitations, notably in that SRA metadata annotations are not particularly reliable. Please also note that this relies on the NCBI taxonomy, so taxonomic names must be NCBI-recognized. If you are unsure, check the ", a("NCBI Taxonomy Browser", href = "https://www.ncbi.nlm.nih.gov/taxonomy"), "."),
+              p("2. Query Serratus by SRA accession. The virome will consist of all SRA accessions provided in your comma-separated list if and only if they have been processed by Serratus. At the time of writing (December 8th, 2023) Serratus v2 has processed X runs (xx%)."),
+              p("3. Upload a virome file. This file should be a .csv with the following columns:"),
+              p("    - run: SRA accession"),
+              p("    - scientific_name: source organism taxonomic name"),
+              p("    - bio_sample: SRA biosample accession"),
+              p("    - sotu: source-sOTU ID"),
+              p("    - gb_acc: genbank accession of closest alignemnt."),
+              p("    - gb_pid: percent identity of closest alignment."),
+              p("    - tax_species: species name of closest alignment."),
+              p("    - tax_phylum: phylum name of closest alignment."),
+              p("    - node_coverage_norm: read coverage for sOTU normalized by library size."),
+              p("For more information about Serratus, see the ", a("wiki", href = "https://github.com/ababaian/serratus/wiki"), ".")
+            )
+          )
+        ) # Row 4 close
       ), # Close homeTab
       bs4TabItem(
         tabName = "ViromeOverview",
         h2("Virome Overview"),
         fluidRow(
-            column(
-              width = 6,
-              uiOutput("VirusBarChartCard")
-            ),
-            column(
-              width = 6,
-              uiOutput("PieChart")
-            )
+          column(
+            width = 6,
+            uiOutput("VirusBarChartCard")
+          ),
+          column(
+            width = 6,
+            uiOutput("PieChart")
+          )
         ),
         fluidRow(
           column(
@@ -198,13 +198,20 @@ ui <- bs4DashPage(
         h2("sOTU Scatterplot"),
         fluidRow(
           bs4Dash::bs4Card(
+            title = "sOTU Density Estimates",
+            plotOutput("palmPrevalenceDensity", height = "600px"),
+            width = 12,
+            collapsible = FALSE
+          )
+        ),
+        fluidRow(
+          bs4Dash::bs4Card(
             title = "sOTU Scatterplot",
             plotlyOutput("palmPrevalence", height = "600px"),
             width = 12,
             collapsible = FALSE
           )
         )
-        # TODO: Add distributions for the three variables
       )
     )
   ), # Close body
@@ -297,38 +304,38 @@ server <- function(input, output, session) {
   })
 
 
-    # ======================= Download button ============================
-    output$downloadButtonUI <- renderUI({
-      req(viromeData())
-      downloadButton("downloadVirome", "Download Virome CSV")
-    })
+  # ======================= Download button ============================
+  output$downloadButtonUI <- renderUI({
+    req(viromeData())
+    downloadButton("downloadVirome", "Download Virome CSV")
+  })
 
-    # Define the download handler
-    output$downloadVirome <- downloadHandler(
-      filename = function() {
-        if (is.null(input$submitQuery)) {
-          return(paste0("virome_", input$uploadFile$name))
-        }
-        else {
-          if (!is.null(input$taxonomicName)) {
-            return(paste0(input$taxonomicName, "_virome.csv"))
-          }
-          else if (!is.null(input$accessions)) {
-            return(paste0(input$accessions, "_virome.csv"))
-          }
-        }
-      },
-      content = function(file) {
-        data <- viromeData()
-        toWrite <- data[[1]]
-        write.csv(toWrite, file = file, row.names = FALSE)
+  # Define the download handler
+  output$downloadVirome <- downloadHandler(
+    filename = function() {
+      if (is.null(input$submitQuery)) {
+        return(paste0("virome_", input$uploadFile$name))
       }
-    )
+      else {
+        if (!is.null(input$taxonomicName)) {
+          return(paste0(input$taxonomicName, "_virome.csv"))
+        }
+        else if (!is.null(input$accessions)) {
+          return(paste0(input$accessions, "_virome.csv"))
+        }
+      }
+    },
+    content = function(file) {
+      data <- viromeData()
+      toWrite <- data[[1]]
+      write.csv(toWrite, file = file, row.names = FALSE)
+    }
+  )
 
-    # ======================= Summary stats ============================
-    output$statsCard <- renderUI({
+  # ======================= Summary stats ============================
+  output$statsCard <- renderUI({
 
-      if (!is.null(viromeData())) {
+    if (!is.null(viromeData())) {
       stats <- getViromeSummary(virome = viromeData())
 
       # Create a bs4Card to display the stats
@@ -345,159 +352,154 @@ server <- function(input, output, session) {
         p("Virus positive runs: ", stats[[5]]),
         p("Runs processed: ", stats[[6]])
       )
-      } else {
+    } else {
       #Display a greyed-out box with "No data loaded" message
-        bs4Card(
-          title = "Virome Summary Stats",
-          status = "secondary",
-          solidHeader = TRUE,
-          collapsible = FALSE,
-          width = NULL,
-          # Display text in center of card
-          div(
-            style = "text-align: center;",
-            p("No data loaded")
-          )
+      bs4Card(
+        title = "Virome Summary Stats",
+        status = "secondary",
+        solidHeader = TRUE,
+        collapsible = FALSE,
+        width = NULL,
+        # Display text in center of card
+        div(
+          style = "text-align: center;",
+          p("No data loaded")
         )
-      }
-    })
-
-    # ======================= Pie Chart ============================
-    output$PieChart <- renderUI({
-      req(viromeData()) # Ensure data is available
-      bs4Dash::box(
-        title = "Pie Chart",
-        status = "primary",
-        solidHeader = FALSE,
-        width = NULL,
-        collapsible = FALSE,
-        plotViromePie(virome = viromeData())
       )
-    })
+    }
+  })
 
-    # ======================= Sankey ================================
-    output$Sankey <- renderPlotly({
-      req(viromeData())
-      current_phylum <- selectedPhylum()
+  # ======================= Pie Chart ============================
+  output$PieChart <- renderUI({
+    req(viromeData()) # Ensure data is available
+    bs4Dash::box(
+      title = "Pie Chart",
+      status = "primary",
+      solidHeader = FALSE,
+      width = NULL,
+      collapsible = FALSE,
+      plotViromePie(virome = viromeData())
+    )
+  })
 
-      if (is.null(current_phylum) || current_phylum == "All") {
-        p <- drawVirusSankey(virome = viromeData())
+  # ======================= Sankey ================================
+  output$Sankey <- renderPlotly({
+    req(viromeData())
+    current_phylum <- selectedPhylum()
+
+    if (is.null(current_phylum) || current_phylum == "All") {
+      p <- drawVirusSankey(virome = viromeData())
+    } else {
+      # very hacky solution to match colors to phyla, but works for now.
+      phyla <- getAvailablePhyla(virome = viromeData())
+      if (length(phyla) > 9) {
+        colors <- RColorBrewer::brewer.pal(n = length(phyla), name = "Set3")
       } else {
-        # very hacky solution to match colors to phyla, but works for now.
-        phyla <- getAvailablePhyla(virome = viromeData())
-        if (length(phyla) > 9) {
-          colors <- RColorBrewer::brewer.pal(n = length(phyla), name = "Set3")
-        } else {
-          colors <- grDevices::palette.colors(n = length(phyla),
-                                              palette = "Okabe-Ito",
-                                              alpha = 0.7)
-        }
-        names(colors) <- phyla
-        color <- colors[current_phylum]
-
-        p <- drawVirusSankey(virome = viromeData(), phylumFilter = current_phylum,
-                        colors = color)
+        colors <- grDevices::palette.colors(n = length(phyla),
+                                            palette = "Okabe-Ito",
+                                            alpha = 0.7)
       }
-      p <- p %>% layout(autosize = TRUE)
+      names(colors) <- phyla
+      color <- colors[current_phylum]
 
-      return(p)
-    })
+      p <- drawVirusSankey(virome = viromeData(), phylumFilter = current_phylum,
+                           colors = color)
+    }
+    p <- p %>% layout(autosize = TRUE)
 
-    output$SankeyCard <- renderUI({
-      bs4Dash::box(
-        title = "Virome Sankey Diagram",
-        status = "primary",
-        solidHeader = FALSE,
-        collapsible = FALSE,
-        maximizable = TRUE,
-        width = NULL,
-        plotlyOutput("Sankey", width = "100%", height = "100%")
-      )
-    })
+    return(p)
+  })
 
-    output$phylumFilterPanel <- renderUI({
-      req(viromeData())
+  output$SankeyCard <- renderUI({
+    bs4Dash::box(
+      title = "Virome Sankey Diagram",
+      status = "primary",
+      solidHeader = FALSE,
+      collapsible = FALSE,
+      maximizable = TRUE,
+      width = NULL,
+      plotlyOutput("Sankey", width = "100%", height = "100%")
+    )
+  })
 
-      availablePhyla <- getAvailablePhyla(virome = viromeData())
+  output$phylumFilterPanel <- renderUI({
+    req(viromeData())
 
-      # Create a selectInput for phylum filtering
-      selectInput("selectedPhylum", "Select Phylum:",
-                  choices = c("All", availablePhyla),
-                  selected = "All")
-    })
+    availablePhyla <- getAvailablePhyla(virome = viromeData())
 
-    # Update the selectedPhylum reactive value whenever the input changes
-    observe({
-      selectedPhylum(input$selectedPhylum)
-    })
+    # Create a selectInput for phylum filtering
+    selectInput("selectedPhylum", "Select Phylum:",
+                choices = c("All", availablePhyla),
+                selected = "All")
+  })
 
-    # ======================= Bar Chart ================================
-    output$VirusBarChart <- renderPlotly({
-      req(viromeData())
+  # Update the selectedPhylum reactive value whenever the input changes
+  observe({
+    selectedPhylum(input$selectedPhylum)
+  })
 
-      # Generate and render the bar chart
-      plotVirusPositive(getHostViralBurden(virome = viromeData()))
-    })
+  # ======================= Bar Chart ================================
+  output$VirusBarChart <- renderPlotly({
+    req(viromeData())
 
-    output$VirusBarChartCard <- renderUI({
-      bs4Dash::box(
-        title = "Virus Positive Runs",
-        status = "primary",
-        solidHeader = FALSE,
-        collapsible = FALSE,
-        maximizable = FALSE,
-        width = NULL,
-        plotlyOutput("VirusBarChart", width = "100%", height = "100%")
-      )
-    })
+    # Generate and render the bar chart
+    plotVirusPositive(getHostViralBurden(virome = viromeData()))
+  })
 
-    # ======================= Alpha Diversity ============================
-    output$AlphaDiversity <- renderPlotly({
-      req(viromeData())
+  output$VirusBarChartCard <- renderUI({
+    bs4Dash::box(
+      title = "Virus Positive Runs",
+      status = "primary",
+      solidHeader = FALSE,
+      collapsible = FALSE,
+      maximizable = FALSE,
+      width = NULL,
+      plotlyOutput("VirusBarChart", width = "100%", height = "100%")
+    )
+  })
 
-      plotAlphaDiversity(virome = viromeData())
-    })
+  # ======================= Alpha Diversity ============================
+  output$AlphaDiversity <- renderPlotly({
+    req(viromeData())
 
-    output$AlphaDiversityCard <- renderUI({
-      bs4Dash::box(
-        title = "BioSample Alpha Diversity",
-        status = "primary",
-        solidHeader = FALSE,
-        collapsible = FALSE,
-        maximizable = FALSE,
-        width = NULL,
-        plotlyOutput("AlphaDiversity", width = "100%", height = "100%")
-      )
-    })
+    plotAlphaDiversity(virome = viromeData())
+  })
 
-    # ======================= Beta Diversity ============================
-    output$BetaDiversityPlot <- renderPlotly({
-        req(viromeData())
-        plotBetaDiversity(virome = viromeData())
-      })
+  output$AlphaDiversityCard <- renderUI({
+    bs4Dash::box(
+      title = "BioSample Alpha Diversity",
+      status = "primary",
+      solidHeader = FALSE,
+      collapsible = FALSE,
+      maximizable = FALSE,
+      width = NULL,
+      plotlyOutput("AlphaDiversity", width = "100%", height = "100%")
+    )
+  })
+
+  # ======================= Beta Diversity ============================
+  output$BetaDiversityPlot <- renderPlotly({
+    req(viromeData())
+    plotBetaDiversity(virome = viromeData())
+  })
 
   # ======================= Heatmap ====================================
-    output$viroHeatMap <- renderPlot({
-      req(viromeData())
-      heatmapPlot <- viroMap(virome = viromeData(), minCov = 1)
-    })
+  output$viroHeatMap <- renderPlot({
+    req(viromeData())
+    heatmapPlot <- viroMap(virome = viromeData(), minCov = 1)
+  })
 
   # ======================= Scatter plot ============================
-    output$palmPrevalence <- renderPlotly({
-      req(viromeData())
-      palmPrevalence(virome = viromeData())
-    })
+  output$palmPrevalence <- renderPlotly({
+    req(viromeData())
+    palmPrevalence(virome = viromeData())
+  })
 
-    # output$sradist <- renderPlotly({
-    #   req(viromeData())
-    #
-    # # plot the distribution of sra runs
-    #   virome <- viromeData()
-    #   data <- virome[[1]]
-    #   sotus <- data %>% select(sotu) %>% unique()
-    # })
-
-  # TODO: Add plots for 4 distributions: sra runs, bioprojects, coverage, and genbank identity
+  # ====================== Scatter plot Density Estimates ====================
+  output$palmPrevalenceDensity <- renderPlot({
+    req(viromeData())
+    palmPrevalenceKernels(virome = viromeData())
+  })
 }
 
 shinyApp(ui = ui, server = server)
