@@ -36,38 +36,7 @@ OpenViRome::viromeDashboard()
 ```{r}
 ls("package:OpenViRome")
 data(package = "OpenViRome")
-browseVignettes("OpenViRome")
 ```
-
-The main function of OpenViRome is `getVirome()`, which takes as input either a
-taxonomic term or a vector of SRA run ids. It returns a 'virome' object, which
-is a list of two dataframes containing the virome data and the run data.
-
-A few of the functions in OpenViRome require a connection to the Serratus
-database. This can be established using the `SerratusConnect()` function from
-the palmid package.
-
-Some of the other functions include: 
-- `plotViromePie()` - plots the taxonomic composition of the virome as a pie chart
-- `drawVirusSankey()` - plots the taxonomic composition of the virome and the source bioproject of    each viral sOTU as a sankey diagram.
-- `plotBetaDiversity()` - plots bray-curtis dissimilarity using PCoA via ampvis2. Functions for      converting a virome object to an ampvis2 object are also provided.
-- `plotAlphaDiversity()` - plots alpha diversity metrics (e.g. Shannon, Simpson).
-
-Additional information and functions are covered in the vignette.
-
-![](./inst/extdata/openViRome_fixed.png)
-
-## Contributions:
-All functions were authored by Aiden Hiller. Some of the functions depend on packages written by others, including:
- - `ampvis2` - for beta diversity analysis (`plotBetaDiversity()`).
- - `palmid` - for querying the Serratus database. 
- - `taxizedb` - for querying NCBI taxonomy (`taxLookup()`).
- 
-Additionally, `ggplot` and `plotly` are used for plotting throughout the package.
-
-The shiny app was written by Aiden Hiller, with help from the `shinydashboard` and `bs4dash` packages.
-
-Provided data (`TylenchoideaVirome`) was generated as part of the Serratus project (Edgar et al., 2022). 
 
 ## References
 A. Babaian and R. C. Edgar (2022), Ribovirus classification by a polymerase barcode sequence. *PeerJ*
@@ -82,8 +51,3 @@ Wickham et al., (2019). Welcome to the tidyverse. *Journal of Open Source Softwa
 
 Xia, Y. & Sun, J. Bioinformatic and Statistical Analysis of Microbiome Data: From Raw Sequences to Advanced Modeling with QIIME 2 and R. *Springer Nature*, 2023.
 
-## Acknowledgements
-
-This package was developed as part of an assessment for 2023 BCB410H: Applied Bioinformat-
-ics course at the University of Toronto, Toronto, CANADA. OpenViRome welcomes issues,
-enhancement requests, and other contributions. To submit an issue, use the GitHub issues.
